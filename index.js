@@ -4,9 +4,6 @@ const fs = require('fs');
 const path = require('path');
 const sharp = require('sharp');
 const convert = require('libreoffice-convert');
-const { promisify } = require('util');
-
-const convertAsync = promisify(convert.convert);
 
 const createWindow = () => {
     const win = new BrowserWindow({
@@ -145,29 +142,38 @@ async function convertImage(inputPath, outputPath, targetFormat) {
 
 // 文档转换函数 (使用 LibreOffice)
 async function convertDocument(inputPath, outputPath, targetFormat) {
+    const format = targetFormat.toLowerCase();
+    const ext = '.' + format.replace(/^\./, '');
+
+    // 优先使用 LibreOffice CLI（soffice），更稳定且不依赖 tmp 清理库
     try {
-        const format = targetFormat.toLowerCase();
-        
-        // 使用 libreoffice-convert 进行文档转换
-        const fileBuffer = fs.readFileSync(inputPath);
-        // libreoffice-convert 的正确用法是传入文件 Buffer 和目标扩展名（例如 '.pdf'）
-        const ext = '.' + format.replace(/^\./, '');
-        const convertedBuffer = await convertAsync(fileBuffer, ext);
-        fs.writeFileSync(outputPath, convertedBuffer);
-    } catch (error) {
-        // 如果 libreoffice-convert 失败，尝试使用 LibreOffice 命令行
+        const { execSync } = require('child_process');
+        execSync(`soffice --headless --convert-to ${format} --outdir "${path.dirname(outputPath)}" "${inputPath}"`, { stdio: 'ignore' });
+
+        const generatedName = path.basename(inputPath, path.extname(inputPath)) + '.' + format;
+        const tempOutputPath = path.join(path.dirname(outputPath), generatedName);
+        if (fs.existsSync(tempOutputPath)) {
+            if (tempOutputPath !== outputPath) fs.renameSync(tempOutputPath, outputPath);
+            return;
+        } else {
+            // CLI 没有生成文件，回退到库方法
+            throw new Error('LibreOffice CLI 未生成输出文件，回退到库方法');
+        }
+    } catch (cliErr) {
+        // 回退到 libreoffice-convert（使用回调风格以避免 promisify 问题）
         try {
-            const { execSync } = require('child_process');
-            execSync(`soffice --headless --convert-to ${targetFormat.toLowerCase()} --outdir "${path.dirname(outputPath)}" "${inputPath}"`);
-            
-            // 如果转换成功，将文件重命名为目标输出路径
-            const tempOutputPath = path.join(path.dirname(outputPath), path.basename(inputPath, path.extname(inputPath)) + '.' + targetFormat.toLowerCase());
-            if (fs.existsSync(tempOutputPath) && tempOutputPath !== outputPath) {
-                fs.renameSync(tempOutputPath, outputPath);
-            }
-        } catch (error2) {
-            // 把两个错误信息都返回，便于定位问题
-            throw new Error(`文档转换失败: 请确保已安装 LibreOffice。libreoffice-convert 错误: ${error.message}; CLI 错误: ${error2.message}`);
+            const fileBuffer = fs.readFileSync(inputPath);
+            const convertedBuffer = await new Promise((resolve, reject) => {
+                convert.convert(fileBuffer, ext, (err, done) => {
+                    if (err) return reject(err);
+                    resolve(done);
+                });
+            });
+            fs.writeFileSync(outputPath, convertedBuffer);
+            return;
+        } catch (libErr) {
+            // 返回详细错误，便于排查
+            throw new Error(`文档转换失败: CLI 错误: ${cliErr.message}; libreoffice-convert 错误: ${libErr.message}`);
         }
     }
 }
