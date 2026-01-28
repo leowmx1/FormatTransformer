@@ -129,17 +129,27 @@ async function convertImage(inputPath, outputPath, targetFormat, options) {
                 throw new Error('缺少依赖 png-to-ico，请运行: npm install png-to-ico');
             }
 
-            const sizes = (options && options.icoSizes && options.icoSizes.length > 0)
+            let sizes = (options && options.icoSizes && options.icoSizes.length > 0)
                 ? options.icoSizes
                 : [16,32,48,64,128,256];
 
-            // 生成每个大小的 PNG buffer
+            // 去重并排序
+            sizes = Array.from(new Set(sizes.map(s => parseInt(s, 10)))).filter(Boolean).sort((a,b)=>a-b);
+
+            // 生成每个大小的 PNG buffer；禁止放大源图以避免质量问题
             const buffers = [];
             for (const size of sizes) {
                 const buf = await sharp(inputPath)
-                    .resize(size, size, { fit: 'contain', background: { r:0,g:0,b:0,alpha:0 } })
+                    .resize(size, size, { fit: 'contain', background: { r:0,g:0,b:0,alpha:0 }, withoutEnlargement: true })
                     .png()
                     .toBuffer();
+                // 打印每个 buffer 的实际尺寸以便调试（查看控制台）
+                try {
+                    const meta = await sharp(buf).metadata();
+                    console.log(`生成 ICO PNG: ${size}x${size} -> actual ${meta.width}x${meta.height}`);
+                } catch (mErr) {
+                    console.log('读取生成 PNG metadata 失败', mErr.message);
+                }
                 buffers.push(buf);
             }
 
