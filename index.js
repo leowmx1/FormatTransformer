@@ -7,6 +7,8 @@ const convert = require('libreoffice-convert');
 let pngToIco = null;
 try {
     pngToIco = require('png-to-ico');
+    // 兼容 ESM default 导出情况
+    if (pngToIco && typeof pngToIco.default === 'function') pngToIco = pngToIco.default;
 } catch (e) {
     // png-to-ico not installed; handle at runtime
     pngToIco = null;
