@@ -7,8 +7,10 @@ const convert = require('libreoffice-convert');
 let pngToIco = null;
 try {
     pngToIco = require('png-to-ico');
-    // 兼容 ESM default 导出情况
+    // 兼容各种导出情况：default / pngToIco / named export
     if (pngToIco && typeof pngToIco.default === 'function') pngToIco = pngToIco.default;
+    else if (pngToIco && typeof pngToIco.pngToIco === 'function') pngToIco = pngToIco.pngToIco;
+    else if (pngToIco && typeof pngToIco['default'] === 'function') pngToIco = pngToIco['default'];
 } catch (e) {
     // png-to-ico not installed; handle at runtime
     pngToIco = null;
@@ -151,6 +153,15 @@ async function convertImage(inputPath, outputPath, targetFormat, options) {
                     console.log('读取生成 PNG metadata 失败', mErr.message);
                 }
                 buffers.push(buf);
+            }
+
+            // 运行时再确认 pngToIco 是函数，若不是给出详细错误信息
+            if (typeof pngToIco !== 'function') {
+                const info = {
+                    type: typeof pngToIco,
+                    keys: pngToIco && typeof pngToIco === 'object' ? Object.keys(pngToIco) : undefined
+                };
+                throw new Error(`pngToIco is not a function; require returned: ${JSON.stringify(info)}`);
             }
 
             const icoBuffer = await pngToIco(buffers);
