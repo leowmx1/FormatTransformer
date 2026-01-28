@@ -27,3 +27,21 @@ app.whenReady().then(() => {
 app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') app.quit();
 });
+
+// 文件转换功能
+function convertFile(category) {
+    // 这里可以实现具体的文件转换逻辑
+    alert(`开始进行 ${category} 转换...`);
+    // 例如，调用相应的转换函数
+}
+
+// 更新按钮事件监听器
+const sidebarButtons = document.querySelectorAll('.sidebar-button');
+
+sidebarButtons.forEach(button => {
+    button.addEventListener('click', (event) => {
+        const category = event.target.getAttribute('data-category');
+        loadContent(category);
+        convertFile(category);
+    });
+});
