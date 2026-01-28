@@ -1,5 +1,22 @@
 // renderer.js - 渲染进程中的DOM操作和事件处理
 
+// Toast 通知函数
+function showToast(message, type = 'info', duration = 4000) {
+    const container = document.getElementById('toastContainer');
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.textContent = message;
+    
+    container.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.classList.add('removing');
+        setTimeout(() => {
+            toast.remove();
+        }, 300);
+    }, duration);
+}
+
 // 定义各分类的格式列表
 const formatMap = {
     'images': ['PNG', 'JPG', 'JPEG', 'GIF', 'BMP', 'WEBP', 'SVG', 'ICO'],
@@ -21,17 +38,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const sidebarButtons = document.querySelectorAll('.sidebar-button');
     const mainContent = document.querySelector('.main-content');
     let selectedFilePath = null;
+    let currentCategory = null;
 
     // 侧边栏按钮点击事件
     sidebarButtons.forEach(button => {
         button.addEventListener('click', (event) => {
             const category = event.target.getAttribute('data-category');
+            currentCategory = category;
             loadContent(category);
         });
     });
 
     // 加载内容到主容器
     function loadContent(category) {
+        selectedFilePath = null; // 重置文件选择
         const categoryName = categoryNameMap[category] || category;
         const formats = formatMap[category] || [];
         
@@ -41,30 +61,31 @@ document.addEventListener('DOMContentLoaded', () => {
             <h1>${categoryName} 转换</h1>
             <div class="operation-container">
                 <div class="form-group">
-                    <label for="selectFileBtn">选择文件:</label>
-                    <button id="selectFileBtn" class="select-file-btn">选择文件</button>
+                    <label for="selectFileBtn">📂 选择文件:</label>
+                    <button id="selectFileBtn" class="select-file-btn">点击选择文件</button>
                     <span id="selectedFileName" class="selected-file-name"></span>
                 </div>
                 <div class="form-group">
-                    <label for="targetFormat">目标格式:</label>
+                    <label for="targetFormat">🎯 目标格式:</label>
                     <select id="targetFormat">
                         <option value="">-- 请选择目标格式 --</option>
                         ${formatOptions}
                     </select>
                 </div>
                 <div class="form-group" id="icoOptions" style="display:none;">
-                    <label>ICO 分辨率:</label>
+                    <label>📏 ICO 分辨率（单选）:</label>
                     <div>
-                        <label><input type="checkbox" value="16"> 16</label>
-                        <label><input type="checkbox" value="32"> 32</label>
-                        <label><input type="checkbox" value="48"> 48</label>
-                        <label><input type="checkbox" value="64"> 64</label>
-                        <label><input type="checkbox" value="128"> 128</label>
-                        <label><input type="checkbox" value="256"> 256</label>
+                        <label><input type="radio" name="icoSize" value="multi" checked> 多尺寸（16,32,48,64,128,256）</label>
+                        <label><input type="radio" name="icoSize" value="16"> 16×16</label>
+                        <label><input type="radio" name="icoSize" value="32"> 32×32</label>
+                        <label><input type="radio" name="icoSize" value="48"> 48×48</label>
+                        <label><input type="radio" name="icoSize" value="64"> 64×64</label>
+                        <label><input type="radio" name="icoSize" value="128"> 128×128</label>
+                        <label><input type="radio" name="icoSize" value="256"> 256×256</label>
                     </div>
-                    <div style="margin-top:6px;color:#666;font-size:13px;">如果没有选择，将使用常用分辨率集合。</div>
+                    <div style="margin-top:6px;color:#666;font-size:13px;">💡 选择"多尺寸"生成常用尺寸集合，或选择单一尺寸。</div>
                 </div>
-                <button id="startConversion">开始转换</button>
+                <button id="startConversion">✨ 开始转换</button>
             </div>
         `;
         
@@ -123,19 +144,27 @@ document.addEventListener('DOMContentLoaded', () => {
         // 调用主进程的转换函数
         window.electronAPI.convertFile(filePath, targetFormat, category, options)
             .then(result => {
+                // 移除正在转换的 toast
+                const toasts = document.querySelectorAll('.toast.info');
+                toasts.forEach(t => t.remove());
+
                 if (result.success) {
-                    let msg = result.message;
+                    let msg = '✓ 转换成功！';
                     if (result.extra && result.extra.icoSizes) {
-                        const sizes = result.extra.icoSizes.map(s => `${s.width}x${s.height}`).join(', ');
-                        msg += `\n包含尺寸: ${sizes}`;
+                        const sizes = result.extra.icoSizes.map(s => `${s.width}×${s.height}`).join(', ');
+                        msg += `\n📦 包含尺寸: ${sizes}`;
                     }
-                    alert(msg);
+                    showToast(msg, 'success', 5000);
                 } else {
-                    alert(result.message);
+                    showToast(`✗ 转换失败: ${result.message}`, 'error', 5000);
                 }
             })
             .catch(error => {
-                alert(`转换失败: ${error.message}`);
+                // 移除正在转换的 toast
+                const toasts = document.querySelectorAll('.toast.info');
+                toasts.forEach(t => t.remove());
+                
+                showToast(`✗ 错误: ${error.message}`, 'error', 5000);
             });
     }
 });
