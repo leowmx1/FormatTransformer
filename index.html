@@ -130,14 +130,27 @@
             </button>
         </aside>
         <main class="main-content">
-            <div class="logo">👋</div>
+            <div class="logo">👏</div>
             <h1>欢迎使用 文件格式转换器</h1>
             <p>一个简洁可靠的转换工具 — 选择或拖拽文件，应用会自动跳转到合适的分类。</p>
 
-            <div class="operation-container" style="max-width:600px;margin:20px auto;">
+            <div class="operation-container" style="max-width:900px;margin:20px auto;">
                 <h3>快速开始</h3>
-                <input id="welcomeFileInput" type="file" accept="*/*" />
-                <div style="margin-top:12px;color:#666;font-size:13px;">或将文件拖拽到左侧对应分类 / 主界面中的拖拽区域</div>
+                <div class="form-group">
+                    <label for="welcomeFileInput">
+                        <i class="bi bi-cloud-upload" aria-hidden="true"></i>
+                        选择或拖拽文件
+                    </label>
+                    <input id="welcomeFileInput" type="file" accept="*/*" style="display:none;" />
+                    <div id="welcomeDropZone" class="drop-zone" style="cursor:pointer;">
+                        <div class="drop-zone-content">
+                            <div class="drop-zone-icon">📥</div>
+                            <div class="drop-zone-text">点击此处选择或拖拽文件</div>
+                            <span id="welcomeFileName" class="selected-file-name"></span>
+                        </div>
+                    </div>
+                </div>
+                <div style="margin-top:12px;color:#666;font-size:13px;">或从侧边栏选择合适的分类后上传</div>
             </div>
         </main>
     </div>

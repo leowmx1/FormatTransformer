@@ -104,16 +104,68 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 欢迎页的文件输入：支持自动跳转到检测到的分类
     const welcomeFileInput = document.getElementById('welcomeFileInput');
-    if (welcomeFileInput) {
+    const welcomeDropZone = document.getElementById('welcomeDropZone');
+    const welcomeFileName = document.getElementById('welcomeFileName');
+    
+    if (welcomeFileInput && welcomeDropZone) {
+        // 点击拖拽框打开文件选择
+        welcomeDropZone.addEventListener('click', () => {
+            welcomeFileInput.click();
+        });
+        
+        // 文件选择时处理
         welcomeFileInput.addEventListener('change', (e) => {
             const f = e.target.files && e.target.files[0];
             if (!f) return;
             const filePath = f.path || f.name;
             const result = { filePath: filePath, fileName: f.name };
+            welcomeFileName.textContent = `✓ 已选择: ${f.name}`;
             const switched = handleFileSelection(result, currentCategory, sidebarButtons);
             if (!switched) {
                 // 如果没有切换分类，提示用户并留在欢迎页
                 showToast('无法自动识别分类，请从侧边栏选择合适的分类。', 'info', 4000);
+            }
+        });
+        
+        // 拖拽事件处理
+        welcomeDropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            welcomeDropZone.classList.add('dragover');
+        });
+
+        welcomeDropZone.addEventListener('dragenter', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            welcomeDropZone.classList.add('dragover');
+        });
+
+        welcomeDropZone.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            welcomeDropZone.classList.remove('dragover');
+        });
+
+        welcomeDropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            welcomeDropZone.classList.remove('dragover');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                const file = files[0];
+                const filePath = file.path || file.name;
+                if (!filePath) {
+                    showToast('无法获取文件路径，请使用点击选择', 'error');
+                    return;
+                }
+                
+                const result = { filePath: filePath, fileName: file.name };
+                welcomeFileName.textContent = `✓ 已选择: ${file.name}`;
+                const switched = handleFileSelection(result, currentCategory, sidebarButtons);
+                if (!switched) {
+                    showToast('无法自动识别分类，请从侧边栏选择合适的分类。', 'info', 4000);
+                }
             }
         });
     }
