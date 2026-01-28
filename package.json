@@ -23,6 +23,8 @@
     "electron": "^40.0.0"
   },
   "dependencies": {
-    "electron-squirrel-startup": "^1.0.1"
+    "electron-squirrel-startup": "^1.0.1",
+    "libreoffice-convert": "^1.7.0",
+    "sharp": "^0.34.5"
   }
 }
