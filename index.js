@@ -150,12 +150,9 @@ async function convertDocument(inputPath, outputPath, targetFormat) {
         
         // 使用 libreoffice-convert 进行文档转换
         const fileBuffer = fs.readFileSync(inputPath);
-        const convertedBuffer = await convertAsync({
-            files: [fileBuffer],
-            format: format,
-            outdir: path.dirname(outputPath)
-        });
-        
+        // libreoffice-convert 的正确用法是传入文件 Buffer 和目标扩展名（例如 '.pdf'）
+        const ext = '.' + format.replace(/^\./, '');
+        const convertedBuffer = await convertAsync(fileBuffer, ext);
         fs.writeFileSync(outputPath, convertedBuffer);
     } catch (error) {
         // 如果 libreoffice-convert 失败，尝试使用 LibreOffice 命令行
@@ -169,7 +166,8 @@ async function convertDocument(inputPath, outputPath, targetFormat) {
                 fs.renameSync(tempOutputPath, outputPath);
             }
         } catch (error2) {
-            throw new Error(`文档转换失败: 请确保已安装 LibreOffice。${error.message}`);
+            // 把两个错误信息都返回，便于定位问题
+            throw new Error(`文档转换失败: 请确保已安装 LibreOffice。libreoffice-convert 错误: ${error.message}; CLI 错误: ${error2.message}`);
         }
     }
 }
