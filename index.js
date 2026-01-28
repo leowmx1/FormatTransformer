@@ -3,8 +3,8 @@ const { app, BrowserWindow } = require('electron');
 
 const createWindow = () => {
     const win = new BrowserWindow({
-        width: 800,
-        height: 600,
+        width: 1000,
+        height: 750,
         webPreferences: {
             nodeIntegration: false, // 安全设置，通常为false
             contextIsolation: true, // 安全设置，通常为true
@@ -29,3 +29,19 @@ app.whenReady().then(() => {
 app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') app.quit();
 });
+
+// 选择器和事件监听器
+const sidebarLinks = document.querySelectorAll('.sidebar ul li a');
+const mainContent = document.querySelector('.main-content');
+
+sidebarLinks.forEach(link => {
+    link.addEventListener('click', (event) => {
+        event.preventDefault();
+        const category = event.target.getAttribute('href').substring(1);
+        loadContent(category);
+    });
+});
+
+function loadContent(category) {
+    mainContent.innerHTML = `<h1>${category} 转换</h1><p>在这里实现 ${category} 的转换功能。</p>`;
+}

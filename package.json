@@ -1,7 +1,7 @@
 {
-  "name": "testapp",
+  "name": "formattransformer",
   "version": "1.0.0",
-  "description": "The first app made by Electron.",
+  "description": "A file format transformer built with Electron.",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",

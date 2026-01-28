@@ -1,8 +1,10 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>我的第一个Electron应用</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文件格式转换器</title>
+    <link rel="stylesheet" href="styles.css">
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -17,13 +19,63 @@
             font-size: 48px;
             margin-bottom: 20px;
         }
+        .container {
+            display: flex;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #fff;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .sidebar {
+            flex: 0 0 250px;
+            padding: 20px;
+            background-color: #f7f7f7;
+            border-right: 1px solid #ddd;
+        }
+        .sidebar h2 {
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        .sidebar ul {
+            list-style: none;
+            padding: 0;
+        }
+        .sidebar ul li {
+            margin-bottom: 10px;
+        }
+        .sidebar ul li a {
+            text-decoration: none;
+            color: #007bff;
+        }
+        .sidebar ul li a:hover {
+            text-decoration: underline;
+        }
+        .main-content {
+            flex: 1;
+            padding: 20px;
+        }
     </style>
 </head>
 <body>
-    <div class="logo">👋</div>
-    <h1>Hello, Electron World!</h1>
-    <p>恭喜你成功运行了第一个Electron桌面应用。</p>
-    <p>你正在使用 Electron <span id="electron-version"></span>。</p>
+    <div class="container">
+        <aside class="sidebar">
+            <h2>首页</h2>
+            <ul>
+                <li><a href="#images">图片转换</a></li>
+                <li><a href="#videos">视频转换</a></li>
+                <li><a href="#audio">音频转换</a></li>
+                <li><a href="#documents">文档转换</a></li>
+            </ul>
+        </aside>
+        <main class="main-content">
+            <div class="logo">👋</div>
+            <h1>欢迎使用文件格式转换器</h1>
+            <p>请选择左侧的分类进行转换。</p>
+            <p>你正在使用 Electron <span id="electron-version"></span>。</p>
+        </main>
+    </div>
     <script>
         // 在渲染进程中安全地显示Electron版本
         window.addEventListener('DOMContentLoaded', () => {
