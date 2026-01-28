@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>我的第一个Electron应用</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            text-align: center;
+            padding-top: 50px;
+            background-color: #f0f0f0;
+        }
+        h1 {
+            color: #333;
+        }
+        .logo {
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="logo">👋</div>
+    <h1>Hello, Electron World!</h1>
+    <p>恭喜你成功运行了第一个Electron桌面应用。</p>
+    <p>你正在使用 Electron <span id="electron-version"></span>。</p>
+    <script>
+        // 在渲染进程中安全地显示Electron版本
+        window.addEventListener('DOMContentLoaded', () => {
+            const versionElement = document.getElementById('electron-version');
+            versionElement.textContent = process.versions.electron;
+        });
+    </script>
+</body>
+</html>
