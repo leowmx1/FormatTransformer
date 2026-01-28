@@ -91,9 +91,10 @@ ipcMain.handle('convert-file', async (event, { filePath, targetFormat, category,
         const outputPath = result.filePath;
         
         // 根据分类调用相应的转换函数
+        let extraInfo = null;
         switch (category) {
             case 'images':
-                await convertImage(filePath, outputPath, targetFormat, options);
+                extraInfo = await convertImage(filePath, outputPath, targetFormat, options);
                 break;
             case 'documents':
                 await convertDocument(filePath, outputPath, targetFormat);
@@ -110,7 +111,8 @@ ipcMain.handle('convert-file', async (event, { filePath, targetFormat, category,
         return { 
             success: true, 
             message: `文件已成功转换并保存至: ${outputPath}`,
-            outputPath: outputPath
+            outputPath: outputPath,
+            extra: extraInfo
         };
     } catch (error) {
         return { 
@@ -166,7 +168,18 @@ async function convertImage(inputPath, outputPath, targetFormat, options) {
 
             const icoBuffer = await pngToIco(buffers);
             fs.writeFileSync(outputPath, icoBuffer);
-            return;
+
+            // 尝试解析 ICO，返回实际包含的尺寸（需要 icojs）
+            try {
+                let icojs = require('icojs');
+                const images = await icojs.parse(icoBuffer, 'image/png');
+                const sizes = images.map(i => ({ width: i.width, height: i.height }));
+                return { icoSizes: sizes };
+            } catch (e) {
+                // 如果无法解析，仍然认为成功，但不返回尺寸信息
+                console.log('无法解析 ICO 以获取尺寸信息，若需要请安装 icojs:', e.message);
+                return { icoSizes: null };
+            }
         }
 
         const transformer = sharp(inputPath);
