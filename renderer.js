@@ -33,6 +33,53 @@ const categoryNameMap = {
     'documents': '文档'
 };
 
+// 构建文件扩展名到分类的反向映射
+const extensionToCategoryMap = {};
+Object.entries(formatMap).forEach(([category, formats]) => {
+    formats.forEach(format => {
+        extensionToCategoryMap[format.toLowerCase()] = category;
+    });
+});
+
+// 检测文件所属的分类
+function detectFileCategory(fileName) {
+    if (!fileName) return null;
+    const extension = fileName.split('.').pop().toLowerCase();
+    return extensionToCategoryMap[extension] || null;
+}
+
+// 处理文件选择并自动切换分类
+function handleFileSelection(result, currentCategory, sidebarButtons) {
+    if (!result.filePath) return false;
+    
+    const detectedCategory = detectFileCategory(result.fileName);
+    
+    // 如果检测到的分类与当前分类不同，则自动切换
+    if (detectedCategory && detectedCategory !== currentCategory) {
+        // 触发对应分类按钮的点击事件
+        const targetButton = Array.from(sidebarButtons).find(
+            btn => btn.getAttribute('data-category') === detectedCategory
+        );
+        if (targetButton) {
+            showToast(`📁 已自动切换到${categoryNameMap[detectedCategory]}分类`, 'info', 3000);
+            setTimeout(() => {
+                targetButton.click();
+                // 在新分类加载后，重新获取dropZone并设置文件
+                setTimeout(() => {
+                    const dropZone = document.getElementById('dropZone');
+                    const selectedFileName = document.getElementById('selectedFileName');
+                    if (dropZone && selectedFileName) {
+                        selectedFileName.textContent = `✓ 已选择: ${result.fileName}`;
+                        dropZone.classList.remove('dragover');
+                    }
+                }, 100);
+            }, 200);
+            return true; // 返回true表示已切换分类
+        }
+    }
+    return false; // 返回false表示没有切换分类
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     // 选择器和事件监听器
     const sidebarButtons = document.querySelectorAll('.sidebar-button');
@@ -105,9 +152,17 @@ document.addEventListener('DOMContentLoaded', () => {
         dropZone.addEventListener('click', async () => {
             const result = await window.electronAPI.selectFile(category);
             if (result.filePath) {
-                selectedFilePath = result.filePath;
-                selectedFileName.textContent = `✓ 已选择: ${result.fileName}`;
-                dropZone.classList.remove('dragover');
+                // 检查是否需要自动切换分类
+                const switched = handleFileSelection(result, category, sidebarButtons);
+                if (!switched) {
+                    // 如果没有切换分类，直接设置文件
+                    selectedFilePath = result.filePath;
+                    selectedFileName.textContent = `✓ 已选择: ${result.fileName}`;
+                    dropZone.classList.remove('dragover');
+                } else {
+                    // 如果切换了分类，在事件处理中已设置文件
+                    selectedFilePath = result.filePath;
+                }
             } else {
                 showToast('文件选择已取消', 'info');
             }
@@ -145,8 +200,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     showToast('无法获取文件路径，请使用点击选择', 'error');
                     return;
                 }
-                selectedFilePath = filePath;
-                selectedFileName.textContent = `✓ 已选择: ${file.name}`;
+                
+                // 检查是否需要自动切换分类
+                const result = { filePath: filePath, fileName: file.name };
+                const switched = handleFileSelection(result, category, sidebarButtons);
+                if (!switched) {
+                    // 如果没有切换分类，直接设置文件
+                    selectedFilePath = filePath;
+                    selectedFileName.textContent = `✓ 已选择: ${file.name}`;
+                } else {
+                    // 如果切换了分类，在事件处理中已设置文件
+                    selectedFilePath = filePath;
+                }
             }
         });
         
