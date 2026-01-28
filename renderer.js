@@ -92,6 +92,12 @@ document.addEventListener('DOMContentLoaded', () => {
         button.addEventListener('click', (event) => {
             const category = event.target.getAttribute('data-category');
             currentCategory = category;
+            
+            // 移除所有按钮的active类
+            sidebarButtons.forEach(btn => btn.classList.remove('active'));
+            // 给选中的按钮添加active类
+            event.target.classList.add('active');
+            
             loadContent(category);
         });
     });
