@@ -102,6 +102,22 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    // 欢迎页的文件输入：支持自动跳转到检测到的分类
+    const welcomeFileInput = document.getElementById('welcomeFileInput');
+    if (welcomeFileInput) {
+        welcomeFileInput.addEventListener('change', (e) => {
+            const f = e.target.files && e.target.files[0];
+            if (!f) return;
+            const filePath = f.path || f.name;
+            const result = { filePath: filePath, fileName: f.name };
+            const switched = handleFileSelection(result, currentCategory, sidebarButtons);
+            if (!switched) {
+                // 如果没有切换分类，提示用户并留在欢迎页
+                showToast('无法自动识别分类，请从侧边栏选择合适的分类。', 'info', 4000);
+            }
+        });
+    }
+
     // 加载内容到主容器
     function loadContent(category) {
         selectedFilePath = null; // 重置文件选择

@@ -2,19 +2,7 @@
 const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const fs = require('fs');
 const path = require('path');
-const sharp = require('sharp');
 const convert = require('libreoffice-convert');
-let pngToIco = null;
-try {
-    pngToIco = require('png-to-ico');
-    // 兼容各种导出情况：default / pngToIco / named export
-    if (pngToIco && typeof pngToIco.default === 'function') pngToIco = pngToIco.default;
-    else if (pngToIco && typeof pngToIco.pngToIco === 'function') pngToIco = pngToIco.pngToIco;
-    else if (pngToIco && typeof pngToIco['default'] === 'function') pngToIco = pngToIco['default'];
-} catch (e) {
-    // png-to-ico not installed; handle at runtime
-    pngToIco = null;
-}
 
 const createWindow = () => {
     const win = new BrowserWindow({
@@ -28,6 +16,26 @@ const createWindow = () => {
     });
     win.loadFile('index.html');
 };
+// 设置应用图标（如果存在 assets/app-icon.png 或 .svg）
+try {
+    const iconPath = path.join(__dirname, 'assets', 'app-icon.png');
+    if (fs.existsSync(iconPath)) {
+        // 重新创建窗口时可使用此图标（Windows/ Linux）
+        app.whenReady().then(() => {
+            BrowserWindow.getAllWindows().forEach(w => w.setIcon(iconPath));
+        });
+    } else {
+        // 尝试 svg
+        const svgPath = path.join(__dirname, 'assets', 'app-icon.svg');
+        if (fs.existsSync(svgPath)) {
+            app.whenReady().then(() => {
+                BrowserWindow.getAllWindows().forEach(w => w.setIcon(svgPath));
+            });
+        }
+    }
+} catch (e) {
+    console.log('设置应用图标失败:', e.message);
+}
 
 app.whenReady().then(() => {
     createWindow();
@@ -122,87 +130,59 @@ ipcMain.handle('convert-file', async (event, { filePath, targetFormat, category,
     }
 });
 
-// 图片转换函数
+// 图片转换函数（使用 ImageMagick CLI，适配 Node.js 22）
 async function convertImage(inputPath, outputPath, targetFormat, options) {
     try {
         const format = targetFormat.toLowerCase();
+        const { execFileSync } = require('child_process');
+        const os = require('os');
 
-        // ICO 特殊处理：生成若干 PNG 大小后合成 ICO
+        // 检查 magick 是否可用
+        try {
+            execFileSync('magick', ['-version'], { stdio: 'ignore' });
+        } catch (e) {
+            throw new Error('未找到 ImageMagick (magick)。请安装 ImageMagick 并确保 magick 在 PATH 中。');
+        }
+
+        // ICO 特殊处理：使用 ImageMagick 的 auto-resize 或者按 sizes 生成
         if (format === 'ico') {
-            if (!pngToIco) {
-                throw new Error('缺少依赖 png-to-ico，请运行: npm install png-to-ico');
-            }
-
-            let sizes = (options && options.icoSizes && options.icoSizes.length > 0)
-                ? options.icoSizes
-                : [16,32,48,64,128,256];
-
-            // 去重并排序
-            sizes = Array.from(new Set(sizes.map(s => parseInt(s, 10)))).filter(Boolean).sort((a,b)=>a-b);
-
-            // 生成每个大小的 PNG buffer；禁止放大源图以避免质量问题
-            const buffers = [];
-            for (const size of sizes) {
-                const buf = await sharp(inputPath)
-                    .resize(size, size, { fit: 'contain', background: { r:0,g:0,b:0,alpha:0 }, withoutEnlargement: true })
-                    .png()
-                    .toBuffer();
-                // 打印每个 buffer 的实际尺寸以便调试（查看控制台）
-                try {
-                    const meta = await sharp(buf).metadata();
-                    console.log(`生成 ICO PNG: ${size}x${size} -> actual ${meta.width}x${meta.height}`);
-                } catch (mErr) {
-                    console.log('读取生成 PNG metadata 失败', mErr.message);
+            if (options && Array.isArray(options.icoSizes) && options.icoSizes.length > 0) {
+                const tmpDir = os.tmpdir();
+                const tmpFiles = [];
+                for (const sRaw of options.icoSizes) {
+                    const s = parseInt(sRaw, 10);
+                    if (!s) continue;
+                    const tmpPng = path.join(tmpDir, `ft_tmp_${Date.now()}_${s}.png`);
+                    execFileSync('magick', [inputPath, '-resize', `${s}x${s}`, '-background', 'none', '-gravity', 'center', '-extent', `${s}x${s}`, tmpPng]);
+                    tmpFiles.push(tmpPng);
                 }
-                buffers.push(buf);
-            }
-
-            // 运行时再确认 pngToIco 是函数，若不是给出详细错误信息
-            if (typeof pngToIco !== 'function') {
-                const info = {
-                    type: typeof pngToIco,
-                    keys: pngToIco && typeof pngToIco === 'object' ? Object.keys(pngToIco) : undefined
-                };
-                throw new Error(`pngToIco is not a function; require returned: ${JSON.stringify(info)}`);
-            }
-
-            const icoBuffer = await pngToIco(buffers);
-            fs.writeFileSync(outputPath, icoBuffer);
-
-            // 尝试解析 ICO，返回实际包含的尺寸（需要 icojs）
-            try {
-                let icojs = require('icojs');
-                const images = await icojs.parse(icoBuffer, 'image/png');
-                const sizes = images.map(i => ({ width: i.width, height: i.height }));
-                return { icoSizes: sizes };
-            } catch (e) {
-                // 如果无法解析，仍然认为成功，但不返回尺寸信息
-                console.log('无法解析 ICO 以获取尺寸信息，若需要请安装 icojs:', e.message);
+                if (tmpFiles.length === 0) throw new Error('无效的 ICO 尺寸参数');
+                execFileSync('magick', [...tmpFiles, outputPath]);
+                // 清理临时文件
+                tmpFiles.forEach(f => { try { fs.unlinkSync(f); } catch (_) {} });
+                return { icoSizes: options.icoSizes.map(s => ({ width: s, height: s })) };
+            } else {
+                execFileSync('magick', [inputPath, '-define', 'icon:auto-resize', outputPath]);
                 return { icoSizes: null };
             }
         }
 
-        const transformer = sharp(inputPath);
-        switch (format) {
-            case 'jpg':
-            case 'jpeg':
-                await transformer.jpeg({ quality: 90 }).toFile(outputPath);
-                break;
-            case 'png':
-                await transformer.png().toFile(outputPath);
-                break;
-            case 'webp':
-                await transformer.webp().toFile(outputPath);
-                break;
-            case 'gif':
-                await transformer.gif().toFile(outputPath);
-                break;
-            case 'bmp':
-                await transformer.bmp().toFile(outputPath);
-                break;
-            default:
-                await transformer.toFormat(format).toFile(outputPath);
+        // 其他格式使用 magick CLI 转换并设置合理参数
+        const args = [inputPath];
+        if (format === 'jpg' || format === 'jpeg') {
+            args.push('-quality', '90', outputPath);
+        } else if (format === 'png') {
+            args.push('-background', 'none', '-flatten', outputPath);
+        } else if (format === 'webp') {
+            args.push('-quality', '90', outputPath);
+        } else if (format === 'gif') {
+            args.push(outputPath);
+        } else {
+            args.push(outputPath);
         }
+
+        execFileSync('magick', args, { stdio: 'ignore' });
+        return null;
     } catch (error) {
         throw new Error(`图片转换失败: ${error.message}`);
     }
