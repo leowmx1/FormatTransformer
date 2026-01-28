@@ -38,19 +38,22 @@
             margin-bottom: 20px;
             color: #333;
         }
-        .sidebar ul {
-            list-style: none;
-            padding: 0;
-        }
-        .sidebar ul li {
+        .sidebar-button {
+            display: block;
+            width: 100%;
+            padding: 10px;
             margin-bottom: 10px;
-        }
-        .sidebar ul li a {
-            text-decoration: none;
+            font-size: 16px;
             color: #007bff;
+            background-color: #fff;
+            border: 1px solid #007bff;
+            border-radius: 4px;
+            cursor: pointer;
+            text-align: left;
         }
-        .sidebar ul li a:hover {
-            text-decoration: underline;
+        .sidebar-button:hover {
+            background-color: #007bff;
+            color: #fff;
         }
         .main-content {
             flex: 1;
@@ -62,12 +65,10 @@
     <div class="container">
         <aside class="sidebar">
             <h2>首页</h2>
-            <ul>
-                <li><a href="#images">图片转换</a></li>
-                <li><a href="#videos">视频转换</a></li>
-                <li><a href="#audio">音频转换</a></li>
-                <li><a href="#documents">文档转换</a></li>
-            </ul>
+            <button class="sidebar-button" data-category="images">图片转换</button>
+            <button class="sidebar-button" data-category="videos">视频转换</button>
+            <button class="sidebar-button" data-category="audio">音频转换</button>
+            <button class="sidebar-button" data-category="documents">文档转换</button>
         </aside>
         <main class="main-content">
             <div class="logo">👋</div>
