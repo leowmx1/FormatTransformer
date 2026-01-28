@@ -27,6 +27,34 @@ app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') app.quit();
 });
 
+// 处理文件选择请求
+ipcMain.handle('select-file', async (event, { category }) => {
+    try {
+        const result = await dialog.showOpenDialog({
+            title: '选择要转换的文件',
+            properties: ['openFile']
+        });
+        
+        if (result.canceled || result.filePaths.length === 0) {
+            return { success: false };
+        }
+        
+        const filePath = result.filePaths[0];
+        const fileName = path.basename(filePath);
+        
+        return { 
+            success: true,
+            filePath: filePath,
+            fileName: fileName
+        };
+    } catch (error) {
+        return { 
+            success: false,
+            message: `选择文件失败: ${error.message}` 
+        };
+    }
+});
+
 // 处理文件转换请求
 ipcMain.handle('convert-file', async (event, { filePath, targetFormat, category }) => {
     try {
