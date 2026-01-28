@@ -61,9 +61,14 @@ document.addEventListener('DOMContentLoaded', () => {
             <h1>${categoryName} 转换</h1>
             <div class="operation-container">
                 <div class="form-group">
-                    <label for="selectFileBtn">📂 选择文件:</label>
-                    <button id="selectFileBtn" class="select-file-btn">点击选择文件</button>
-                    <span id="selectedFileName" class="selected-file-name"></span>
+                    <label>📂 选择或拖拽文件:</label>
+                    <div id="dropZone" class="drop-zone">
+                        <div class="drop-zone-content">
+                            <div class="drop-zone-icon">📥</div>
+                            <div class="drop-zone-text">点击选择或拖拽文件到此</div>
+                            <span id="selectedFileName" class="selected-file-name"></span>
+                        </div>
+                    </div>
                 </div>
                 <div class="form-group">
                     <label for="targetFormat">🎯 目标格式:</label>
@@ -90,40 +95,87 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
         
         // 重新获取新添加的元素并添加事件监听器
-        const selectFileBtn = document.getElementById('selectFileBtn');
+        const dropZone = document.getElementById('dropZone');
         const selectedFileName = document.getElementById('selectedFileName');
         const newStartButton = document.getElementById('startConversion');
         const targetFormatSelect = document.getElementById('targetFormat');
         const icoOptions = document.getElementById('icoOptions');
         
-        // 点击选择文件按钮
-        selectFileBtn.addEventListener('click', async () => {
+        // 点击选择文件
+        dropZone.addEventListener('click', async () => {
             const result = await window.electronAPI.selectFile(category);
             if (result.filePath) {
                 selectedFilePath = result.filePath;
-                selectedFileName.textContent = `已选择: ${result.fileName}`;
+                selectedFileName.textContent = `✓ 已选择: ${result.fileName}`;
+                dropZone.classList.remove('dragover');
+            } else {
+                showToast('文件选择已取消', 'info');
+            }
+        });
+
+        // 拖拽事件处理
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            dropZone.classList.add('dragover');
+        });
+
+        dropZone.addEventListener('dragenter', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            dropZone.classList.add('dragover');
+        });
+
+        dropZone.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            dropZone.classList.remove('dragover');
+        });
+
+        dropZone.addEventListener('drop', async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            dropZone.classList.remove('dragover');
+
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                const file = files[0];
+                const filePath = file.path || file.name;
+                if (!filePath) {
+                    showToast('无法获取文件路径，请使用点击选择', 'error');
+                    return;
+                }
+                selectedFilePath = filePath;
+                selectedFileName.textContent = `✓ 已选择: ${file.name}`;
             }
         });
         
         // 点击开始转换按钮
         newStartButton.addEventListener('click', () => {
             if (!selectedFilePath) {
-                alert('请先选择一个文件');
+                showToast('请先选择一个文件', 'error');
                 return;
             }
             if (!targetFormatSelect.value) {
-                alert('请先选择目标格式');
+                showToast('请先选择目标格式', 'error');
                 return;
             }
             const targetFormat = targetFormatSelect.value;
 
-            // 收集 ICO 选项
+            // 收集 ICO 选项（单选）
             let options = {};
             if (category === 'images' && targetFormat.toLowerCase() === 'ico') {
-                const checked = Array.from(icoOptions.querySelectorAll('input[type=checkbox]:checked')).map(n => parseInt(n.value, 10));
-                if (checked.length > 0) options.icoSizes = checked;
+                const selected = icoOptions.querySelector('input[name="icoSize"]:checked');
+                if (selected) {
+                    if (selected.value === 'multi') {
+                        // 不设置 options.icoSizes 表示使用默认多尺寸集合
+                    } else {
+                        options.icoSizes = [parseInt(selected.value, 10)];
+                    }
+                }
             }
 
+            showToast('正在转换文件，请稍候...', 'info', 999999);
             convertFile(selectedFilePath, category, targetFormat, options);
         });
 

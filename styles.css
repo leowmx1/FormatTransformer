@@ -300,3 +300,47 @@ body {
 .toast.removing {
     animation: slideOut 0.3s ease-out forwards;
 }
+
+.drop-zone {
+    border: 2px dashed #d4dfe8;
+    border-radius: 8px;
+    padding: 40px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background-color: #fafafa;
+}
+
+.drop-zone:hover {
+    border-color: #667eea;
+    background-color: #f0f4ff;
+}
+
+.drop-zone.dragover {
+    border-color: #667eea;
+    background-color: #e8f4ff;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+    border-width: 2px;
+}
+
+.drop-zone-content {
+    pointer-events: none;
+}
+
+.drop-zone-icon {
+    font-size: 48px;
+    margin-bottom: 10px;
+}
+
+.drop-zone-text {
+    color: #666;
+    font-size: 14px;
+    margin-bottom: 5px;
+}
+
+.selected-file-name {
+    display: block;
+    color: #667eea;
+    font-size: 13px;
+    margin-top: 8px;
+}
