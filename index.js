@@ -4,6 +4,39 @@ const fs = require('fs');
 const path = require('path');
 const convert = require('libreoffice-convert');
 
+const { nativeImage } = require('electron');
+
+async function ensurePngIcon() {
+    try {
+        const svgPath = path.join(__dirname, 'assets', 'app-icon.svg');
+        const pngPath = path.join(__dirname, 'assets', 'app-icon.png');
+        if (!fs.existsSync(svgPath)) return;
+
+        let need = true;
+        if (fs.existsSync(pngPath)) {
+            try {
+                const sStat = fs.statSync(svgPath);
+                const pStat = fs.statSync(pngPath);
+                if (pStat.mtimeMs >= sStat.mtimeMs) need = false;
+            } catch (e) {
+                need = true;
+            }
+        }
+
+        if (!need) return;
+
+        const svg = fs.readFileSync(svgPath, 'utf8');
+        const dataUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+        const image = nativeImage.createFromDataURL(dataUrl);
+        const resized = image.resize({ width: 256, height: 256 });
+        const pngBuffer = resized.toPNG();
+        fs.writeFileSync(pngPath, pngBuffer);
+        console.log('生成 PNG 图标：', pngPath);
+    } catch (e) {
+        console.log('生成 PNG 图标失败：', e.message);
+    }
+}
+
 const createWindow = () => {
     const win = new BrowserWindow({
         width: 1000,
@@ -38,7 +71,8 @@ try {
 }
 
 app.whenReady().then(() => {
-    createWindow();
+    // 在创建窗口前确保 PNG 图标存在
+    ensurePngIcon().then(() => createWindow());
     app.on('activate', () => {
         if (BrowserWindow.getAllWindows().length === 0) createWindow();
     });
