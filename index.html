@@ -42,7 +42,7 @@
             display: block;
             width: 100%;
             padding: 10px;
-            margin-bottom: 10px;
+            margin: 0;
             font-size: 16px;
             color: #007bff;
             background-color: #fff;
@@ -59,6 +59,12 @@
             flex: 1;
             padding: 20px;
         }
+        hr {
+            border: 0;
+            height: 1px;
+            background: #ddd;
+            margin: 10px 0;
+        }
     </style>
 </head>
 <body>
@@ -66,8 +72,11 @@
         <aside class="sidebar">
             <h2>首页</h2>
             <button class="sidebar-button" data-category="images">图片转换</button>
+            <hr>
             <button class="sidebar-button" data-category="videos">视频转换</button>
+            <hr>
             <button class="sidebar-button" data-category="audio">音频转换</button>
+            <hr>
             <button class="sidebar-button" data-category="documents">文档转换</button>
         </aside>
         <main class="main-content">
