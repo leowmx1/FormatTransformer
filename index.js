@@ -4,6 +4,13 @@ const fs = require('fs');
 const path = require('path');
 const sharp = require('sharp');
 const convert = require('libreoffice-convert');
+let pngToIco = null;
+try {
+    pngToIco = require('png-to-ico');
+} catch (e) {
+    // png-to-ico not installed; handle at runtime
+    pngToIco = null;
+}
 
 const createWindow = () => {
     const win = new BrowserWindow({
@@ -58,7 +65,7 @@ ipcMain.handle('select-file', async (event, { category }) => {
 });
 
 // 处理文件转换请求
-ipcMain.handle('convert-file', async (event, { filePath, targetFormat, category }) => {
+ipcMain.handle('convert-file', async (event, { filePath, targetFormat, category, options }) => {
     try {
         const fileName = path.basename(filePath, path.extname(filePath));
         const newFileName = `${fileName}.${targetFormat.toLowerCase()}`;
@@ -82,7 +89,7 @@ ipcMain.handle('convert-file', async (event, { filePath, targetFormat, category 
         // 根据分类调用相应的转换函数
         switch (category) {
             case 'images':
-                await convertImage(filePath, outputPath, targetFormat);
+                await convertImage(filePath, outputPath, targetFormat, options);
                 break;
             case 'documents':
                 await convertDocument(filePath, outputPath, targetFormat);
@@ -110,11 +117,36 @@ ipcMain.handle('convert-file', async (event, { filePath, targetFormat, category 
 });
 
 // 图片转换函数
-async function convertImage(inputPath, outputPath, targetFormat) {
+async function convertImage(inputPath, outputPath, targetFormat, options) {
     try {
         const format = targetFormat.toLowerCase();
+
+        // ICO 特殊处理：生成若干 PNG 大小后合成 ICO
+        if (format === 'ico') {
+            if (!pngToIco) {
+                throw new Error('缺少依赖 png-to-ico，请运行: npm install png-to-ico');
+            }
+
+            const sizes = (options && options.icoSizes && options.icoSizes.length > 0)
+                ? options.icoSizes
+                : [16,32,48,64,128,256];
+
+            // 生成每个大小的 PNG buffer
+            const buffers = [];
+            for (const size of sizes) {
+                const buf = await sharp(inputPath)
+                    .resize(size, size, { fit: 'contain', background: { r:0,g:0,b:0,alpha:0 } })
+                    .png()
+                    .toBuffer();
+                buffers.push(buf);
+            }
+
+            const icoBuffer = await pngToIco(buffers);
+            fs.writeFileSync(outputPath, icoBuffer);
+            return;
+        }
+
         const transformer = sharp(inputPath);
-        
         switch (format) {
             case 'jpg':
             case 'jpeg':
