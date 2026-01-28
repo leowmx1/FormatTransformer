@@ -118,20 +118,8 @@
             <div class="logo">👋</div>
             <h1>欢迎使用文件格式转换器</h1>
             <p>请选择左侧的分类进行转换。</p>
-            <p>你正在使用 Electron <span id="electron-version"></span>。</p>
-            <div class="operation-container">
-                <h3>操作组件</h3>
-                <input type="file" id="fileInput" />
-                <button id="startConversion">开始转换</button>
-            </div>
         </main>
     </div>
-    <script>
-        // 在渲染进程中安全地显示Electron版本
-        window.addEventListener('DOMContentLoaded', () => {
-            const versionElement = document.getElementById('electron-version');
-            versionElement.textContent = process.versions.electron;
-        });
-    </script>
+    <script src="renderer.js"></script>
 </body>
 </html>
