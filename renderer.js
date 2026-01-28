@@ -182,24 +182,24 @@ document.addEventListener('DOMContentLoaded', () => {
             <h1>${categoryName} 转换</h1>
             <div class="operation-container">
                 <div class="form-group">
-                    <label>📂 选择或拖拽文件:</label>
+                    <label><i class="bi bi-cloud-upload"></i> 选择或拖拽文件:</label>
                     <div id="dropZone" class="drop-zone">
                         <div class="drop-zone-content">
-                            <div class="drop-zone-icon">📥</div>
+                            <div class="drop-zone-icon"><i class="bi bi-file-arrow-down"></i></div>
                             <div class="drop-zone-text">点击选择或拖拽文件到此</div>
                             <span id="selectedFileName" class="selected-file-name"></span>
                         </div>
                     </div>
                 </div>
                 <div class="form-group">
-                    <label for="targetFormat">🎯 目标格式:</label>
+                    <label for="targetFormat"><i class="bi bi-bullseye"></i> 目标格式:</label>
                     <select id="targetFormat">
                         <option value="">-- 请选择目标格式 --</option>
                         ${formatOptions}
                     </select>
                 </div>
                 <div class="form-group" id="icoOptions" style="display:none;">
-                    <label>📏 ICO 分辨率（单选）:</label>
+                    <label><i class="bi bi-aspect-ratio"></i> ICO 分辨率（单选）:</label>
                     <div>
                         <label><input type="radio" name="icoSize" value="multi" checked> 多尺寸（16,32,48,64,128,256）</label>
                         <label><input type="radio" name="icoSize" value="16"> 16×16</label>
@@ -209,9 +209,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         <label><input type="radio" name="icoSize" value="128"> 128×128</label>
                         <label><input type="radio" name="icoSize" value="256"> 256×256</label>
                     </div>
-                    <div style="margin-top:6px;color:#666;font-size:13px;">💡 选择"多尺寸"生成常用尺寸集合，或选择单一尺寸。</div>
+                    <div style="margin-top:6px;color:#666;font-size:13px;"><i class="bi bi-info-circle" style="margin-right:4px;"></i>选择"多尺寸"生成常用尺寸集合，或选择单一尺寸。</div>
                 </div>
-                <button id="startConversion">✨ 开始转换</button>
+                <button id="startConversion"><i class="bi bi-play-circle" style="margin-right:6px;"></i>开始转换</button>
             </div>
         `;
         
