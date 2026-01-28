@@ -30,18 +30,20 @@ app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') app.quit();
 });
 
-// 选择器和事件监听器
-const sidebarLinks = document.querySelectorAll('.sidebar ul li a');
-const mainContent = document.querySelector('.main-content');
+window.onload = function() {
+    // 选择器和事件监听器
+    const sidebarLinks = document.querySelectorAll('.sidebar ul li a');
+    const mainContent = document.querySelector('.main-content');
 
-sidebarLinks.forEach(link => {
-    link.addEventListener('click', (event) => {
-        event.preventDefault();
-        const category = event.target.getAttribute('href').substring(1);
-        loadContent(category);
+    sidebarLinks.forEach(link => {
+        link.addEventListener('click', (event) => {
+            event.preventDefault();
+            const category = event.target.getAttribute('href').substring(1);
+            loadContent(category);
+        });
     });
-});
 
-function loadContent(category) {
-    mainContent.innerHTML = `<h1>${category} 转换</h1><p>在这里实现 ${category} 的转换功能。</p>`;
-}
+    function loadContent(category) {
+        mainContent.innerHTML = `<h1>${category} 转换</h1><p>在这里实现 ${category} 的转换功能。</p>`;
+    }
+};
