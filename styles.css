@@ -18,16 +18,17 @@ body {
 
 .sidebar {
     width: 220px;
-    background: linear-gradient(180deg, #2c3e50 0%, #34495e 100%);
+    background-color: #fff;
     padding: 20px;
     overflow-y: auto;
     box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+    border-right: 1px solid #e0e0e0;
 }
 
 .sidebar h2 {
     margin-top: 0;
     margin-bottom: 30px;
-    color: #fff;
+    color: #2c3e50;
     font-size: 18px;
     font-weight: 600;
     letter-spacing: 0.5px;
@@ -35,7 +36,7 @@ body {
 
 .sidebar hr {
     border: none;
-    border-top: 1px solid rgba(255, 255, 255, 0.2);
+    border-top: 1px solid #e0e0e0;
     margin: 12px 0;
 }
 
@@ -44,10 +45,10 @@ body {
     width: 100%;
     padding: 12px 16px;
     margin: 0;
-    background-color: transparent;
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    background-color: #f5f5f5;
+    border: 1px solid #d4dfe8;
     border-radius: 6px;
-    color: rgba(255, 255, 255, 0.85);
+    color: #2c3e50;
     font-size: 14px;
     font-weight: 500;
     cursor: pointer;
@@ -56,13 +57,13 @@ body {
 }
 
 .sidebar-button:hover {
-    background-color: rgba(255, 255, 255, 0.1);
-    border-color: rgba(255, 255, 255, 0.5);
-    color: #fff;
+    background-color: #e8f4ff;
+    border-color: #667eea;
+    color: #667eea;
 }
 
 .sidebar-button:active {
-    background-color: rgba(255, 255, 255, 0.15);
+    background-color: #d4e8ff;
 }
 
 .main-content {
