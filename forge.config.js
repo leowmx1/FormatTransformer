@@ -22,6 +22,18 @@ module.exports = {
     {
       name: '@electron-forge/maker-rpm',
       config: {},
+    },
+    {
+      name: '@electron-forge/maker-wix',
+      config: {
+        language: 2052, // 中文(简体)的 locale ID
+        manufacturer: 'leowmx', // 会显示在安装程序中
+        description: 'All-in-one format transformer application.', // 应用描述
+        // 可选：设置安装界面背景图
+        ui: {
+           chooseDirectory: true // 是否允许用户选择安装目录
+        }
+      }
     }
   ],
   plugins: [
