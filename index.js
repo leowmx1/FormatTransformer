@@ -1,6 +1,7 @@
 // main.js
 const { app, BrowserWindow, ipcMain, dialog } = require('electron');
-const fs = require('fs').promises;
+const fsp = require('fs').promises;
+const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const convert = require('libreoffice-convert');
@@ -285,10 +286,10 @@ ipcMain.handle('handle-dropped-file', async (event, arrayBuffer, fileName) => {
 
   try {
     // 1. 确保临时目录存在（使用 Promise 风格的 mkdir）
-    await fs.mkdir(tempDir, { recursive: true });
+    await fsp.mkdir(tempDir, { recursive: true });
     
     // 2. 将 ArrayBuffer 写入文件（使用 Promise 风格的 writeFile）
-    await fs.writeFile(tempFilePath, Buffer.from(arrayBuffer));
+    await fsp.writeFile(tempFilePath, Buffer.from(arrayBuffer));
     
     // 3. 返回结果
     return {
