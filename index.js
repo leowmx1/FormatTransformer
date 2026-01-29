@@ -49,19 +49,19 @@ const createWindow = () => {
         }
     });
     win.loadFile('index.html');
-    // win.webContents.on('did-finish-load', () => {
-    //     // 再次检查 win 对象是否仍然有效
-    //     if (!win || win.isDestroyed()) {
-    //         console.error('尝试打开DevTools时，窗口对象已失效或销毁。');
-    //         return;
-    //     }
-    //     try {
-    //         win.webContents.openDevTools();
-    //         console.log('DevTools 已成功打开。');
-    //     } catch (err) {
-    //         console.error('打开 DevTools 失败:', err.message);
-    //     }
-    // });
+    win.webContents.on('did-finish-load', () => {
+        // 再次检查 win 对象是否仍然有效
+        if (!win || win.isDestroyed()) {
+            console.error('尝试打开DevTools时，窗口对象已失效或销毁。');
+            return;
+        }
+        try {
+            win.webContents.openDevTools();
+            console.log('DevTools 已成功打开。');
+        } catch (err) {
+            console.error('打开 DevTools 失败:', err.message);
+        }
+    });
 };
 // 设置应用图标（如果存在 assets/app-icon.png 或 .svg）
 try {

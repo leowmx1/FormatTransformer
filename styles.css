@@ -330,6 +330,7 @@ body {
     border: 2px dashed #d4dfe8;
     border-radius: 8px;
     padding: 40px 20px;
+    width: 100%;
     text-align: center;
     cursor: pointer;
     transition: all 0.3s ease;
