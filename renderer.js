@@ -172,7 +172,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 加载内容到主容器
     function loadContent(category) {
-        selectedFilePath = null; // 重置文件选择
+        //selectedFilePath = null; // 重置文件选择
         const categoryName = categoryNameMap[category] || category;
         const formats = formatMap[category] || [];
         
@@ -291,9 +291,14 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // 点击开始转换按钮
         newStartButton.addEventListener('click', () => {
-            if (!selectedFilePath) {
-                showToast('请先选择一个文件', 'error');
-                return;
+            if ((!selectedFilePath) || (!selectedFileName.textContent)) {
+                if (!selectedFileName.textContent) {
+                    showToast('请先选择一个文件', 'error');
+                    selectedFilePath = null;
+                    selectedFileName.textContent = '';
+                    return;
+                }
+                selectedFilePath = selectedFileName.textContent.replace('✓ 已选择: ', '');
             }
             if (!targetFormatSelect.value) {
                 showToast('请先选择目标格式', 'error');
