@@ -1,9 +1,9 @@
 // main.js
 const { app, BrowserWindow, ipcMain, dialog } = require('electron');
-const fs = require('fs');
+const fs = require('fs').promises;
 const path = require('path');
+const os = require('os');
 const convert = require('libreoffice-convert');
-
 const { nativeImage } = require('electron');
 
 async function ensurePngIcon() {
@@ -273,3 +273,31 @@ async function convertDocument(inputPath, outputPath, targetFormat) {
         }
     }
 }
+// 处理拖拽文件请求
+ipcMain.handle('handle-dropped-file', async (event, arrayBuffer, fileName) => {
+  // 注意：这里假设你已经正确引入了 fs, path, os 模块
+  // const fs = require('fs').promises;
+  // const path = require('path');
+  // const os = require('os');
+
+  const tempDir = path.join(os.tmpdir(), 'FormatTransformerTemp');
+  const tempFilePath = path.join(tempDir, `${Date.now()}-${Math.random().toString(36).slice(2)}-${fileName}`);
+
+  try {
+    // 1. 确保临时目录存在（使用 Promise 风格的 mkdir）
+    await fs.mkdir(tempDir, { recursive: true });
+    
+    // 2. 将 ArrayBuffer 写入文件（使用 Promise 风格的 writeFile）
+    await fs.writeFile(tempFilePath, Buffer.from(arrayBuffer));
+    
+    // 3. 返回结果
+    return {
+      filePath: tempFilePath,
+      fileName: fileName
+    };
+  } catch (error) {
+    console.error('处理拖拽文件失败，详情:', error);
+    // 重新抛出错误，让渲染进程能捕获到
+    throw new Error(`保存拖拽文件失败: ${error.message}`);
+  }
+});

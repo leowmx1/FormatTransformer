@@ -149,26 +149,32 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
         e.stopPropagation();
         welcomeDropZone.classList.remove('dragover');
-
+        
         const files = e.dataTransfer.files;
         if (files.length > 0) {
             const file = files[0];
-            const filePath = file.path;
-            if (!filePath) {
-                showToast('无法获取文件路径，请使用点击选择', 'error');
-                return;
-            }
+            showToast('正在处理拖拽文件...', 'info', 3000);
             
-            // 检查是否需要自动切换分类
-            const result = { filePath: filePath, fileName: file.name };
-            const switched = handleFileSelection(result, category, sidebarButtons);
-            if (!switched) {
-                // 如果没有切换分类，直接设置文件
-                selectedFilePath = filePath;
-                selectedFileName.textContent = `✓ 已选择: ${file.name}`;
-            } else {
-                // 如果切换了分类，在事件处理中已设置文件
-                selectedFilePath = filePath;
+            try {
+                // 1. 将 File 对象读取为 ArrayBuffer
+                const arrayBuffer = await file.arrayBuffer();
+                
+                // 2. 调用主进程API，保存文件并获取路径
+                const result = await window.electronAPI.handleDroppedFile(arrayBuffer, file.name);
+                
+                if (result && result.filePath) {
+                    // 3. 使用返回的临时文件路径进行后续操作
+                    welcomeSelectedFileName.textContent = `✓ 已选择: ${result.fileName}`;
+                    const switched = handleFileSelection(result, currentCategory, sidebarButtons);
+                    if (!switched) {
+                        showToast('无法自动识别分类，请从侧边栏选择合适的分类。', 'info', 4000);
+                    }
+                } else {
+                    showToast('处理文件失败，未返回路径', 'error');
+                }
+            } catch (error) {
+                console.error('拖拽文件处理全过程错误:', error);
+                showToast(`处理拖拽文件失败: ${error.message}`, 'error', 5000);
             }
         }
     });
@@ -273,30 +279,36 @@ document.addEventListener('DOMContentLoaded', () => {
             dropZone.classList.remove('dragover');
         });
 
-        dropZone.addEventListener('drop', async (e) => {
+        welcomeDropZone.addEventListener('drop', async (e) => {
             e.preventDefault();
             e.stopPropagation();
-            dropZone.classList.remove('dragover');
-
+            welcomeDropZone.classList.remove('dragover');
+            
             const files = e.dataTransfer.files;
             if (files.length > 0) {
                 const file = files[0];
-                const filePath = file.path;
-                if (!filePath) {
-                    showToast('无法获取文件路径，请使用点击选择', 'error');
-                    return;
-                }
+                showToast('正在处理拖拽文件...', 'info', 3000);
                 
-                // 检查是否需要自动切换分类
-                const result = { filePath: filePath, fileName: file.name };
-                const switched = handleFileSelection(result, category, sidebarButtons);
-                if (!switched) {
-                    // 如果没有切换分类，直接设置文件
-                    selectedFilePath = filePath;
-                    selectedFileName.textContent = `✓ 已选择: ${file.name}`;
-                } else {
-                    // 如果切换了分类，在事件处理中已设置文件
-                    selectedFilePath = filePath;
+                try {
+                    // 1. 将 File 对象读取为 ArrayBuffer
+                    const arrayBuffer = await file.arrayBuffer();
+                    
+                    // 2. 调用主进程API，保存文件并获取路径
+                    const result = await window.electronAPI.handleDroppedFile(arrayBuffer, file.name);
+                    
+                    if (result && result.filePath) {
+                        // 3. 使用返回的临时文件路径进行后续操作
+                        welcomeFileName.textContent = `✓ 已选择: ${result.fileName}`;
+                        const switched = handleFileSelection(result, currentCategory, sidebarButtons);
+                        if (!switched) {
+                            showToast('无法自动识别分类，请从侧边栏选择合适的分类。', 'info', 4000);
+                        }
+                    } else {
+                        showToast('处理文件失败，未返回路径', 'error');
+                    }
+                } catch (error) {
+                    console.error('拖拽文件处理全过程错误:', error);
+                    showToast(`处理拖拽文件失败: ${error.message}`, 'error', 5000);
                 }
             }
         });
