@@ -111,7 +111,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const result = await window.electronAPI.selectFile('welcome');
         if (result.filePath) {
             // 检查是否需要自动切换分类
-            const switched = handleFileSelection(result, category, sidebarButtons);
+            const switched = handleFileSelection(result, "quickstart", sidebarButtons);
             if (!switched) {
                 // 如果没有切换分类，直接设置文件
                 selectedFilePath = result.filePath;
