@@ -281,7 +281,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const files = e.dataTransfer.files;
             if (files.length > 0) {
                 const file = files[0];
-                const filePath = file.path || file.name;
+                const filePath = file.path;
                 if (!filePath) {
                     showToast('无法获取文件路径，请使用点击选择', 'error');
                     return;
