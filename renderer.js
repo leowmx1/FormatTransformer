@@ -127,25 +127,25 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // 拖拽事件处理
-    dropZone.addEventListener('dragover', (e) => {
+    welcomeDropZone.addEventListener('dragover', (e) => {
         e.preventDefault();
         e.stopPropagation();
         welcomeDropZone.classList.add('dragover');
     });
 
-    dropZone.addEventListener('dragenter', (e) => {
+    welcomeDropZone.addEventListener('dragenter', (e) => {
         e.preventDefault();
         e.stopPropagation();
         welcomeDropZone.classList.add('dragover');
     });
 
-    dropZone.addEventListener('dragleave', (e) => {
+    welcomeDropZone.addEventListener('dragleave', (e) => {
         e.preventDefault();
         e.stopPropagation();
         welcomeDropZone.classList.remove('dragover');
     });
 
-    dropZone.addEventListener('drop', async (e) => {
+    welcomeDropZone.addEventListener('drop', async (e) => {
         e.preventDefault();
         e.stopPropagation();
         welcomeDropZone.classList.remove('dragover');
