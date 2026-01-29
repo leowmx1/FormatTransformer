@@ -22,17 +22,6 @@ module.exports = {
     {
       name: '@electron-forge/maker-rpm',
       config: {},
-    },
-    {
-      name: '@electron-forge/maker-nsis',
-      config: {
-        // 可选：一键安装（非必须，按需添加）
-        oneClick: false,
-        // 可选：允许用户选择安装目录（非必须，按需添加）
-        perMachine: false,
-        // 可选：安装图标路径（非必须，按需添加）
-        // installerIcon: 'path/to/icon.ico'
-      }
     }
   ],
   plugins: [
