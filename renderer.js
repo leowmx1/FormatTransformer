@@ -345,14 +345,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 toasts.forEach(t => t.remove());
 
                 if (result.success) {
-                    let msg = '✓ 转换成功！';
+                    let msg = '转换成功！';
                     if (result.extra && result.extra.icoSizes) {
                         const sizes = result.extra.icoSizes.map(s => `${s.width}×${s.height}`).join(', ');
                         msg += `\n📦 包含尺寸: ${sizes}`;
                     }
                     showToast(msg, 'success', 5000);
                 } else {
-                    showToast(`✗ 转换失败: ${result.message}`, 'error', 5000);
+                    showToast(`转换失败: ${result.message}`, 'error', 5000);
                 }
             })
             .catch(error => {
@@ -360,7 +360,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const toasts = document.querySelectorAll('.toast.info');
                 toasts.forEach(t => t.remove());
                 
-                showToast(`✗ 错误: ${error.message}`, 'error', 5000);
+                showToast(`错误: ${error.message}`, 'error', 5000);
             });
     }
 });
