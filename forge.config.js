@@ -4,6 +4,8 @@ const { FuseV1Options, FuseVersion } = require('@electron/fuses');
 module.exports = {
   packagerConfig: {
     asar: true,
+    icon: '.\\assets\\app-icon',
+    name: 'FormatTransformer'
   },
   rebuildConfig: {},
   makers: [
@@ -29,7 +31,7 @@ module.exports = {
         language: 2052, // 中文(简体)的 locale ID
         manufacturer: 'leowmx', // 会显示在安装程序中
         description: 'All-in-one format transformer application.', // 应用描述
-        // 可选：设置安装界面背景图
+        icon: '.\\assets\\app-icon.ico',
         ui: {
            chooseDirectory: true // 是否允许用户选择安装目录
         }
