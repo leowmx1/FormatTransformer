@@ -56,6 +56,8 @@ function handleFileSelection(result, currentCategory, sidebarButtons) {
     
     // 如果检测到的分类与当前分类不同，则自动切换
     if (detectedCategory && detectedCategory !== currentCategory) {
+        document.body.dataset.pendingFilePath = result.filePath;
+        document.body.dataset.pendingFileName = result.fileName;
         // 触发对应分类按钮的点击事件
         const targetButton = Array.from(sidebarButtons).find(
             btn => btn.getAttribute('data-category') === detectedCategory
@@ -221,7 +223,16 @@ document.addEventListener('DOMContentLoaded', () => {
         const newStartButton = document.getElementById('startConversion');
         const targetFormatSelect = document.getElementById('targetFormat');
         const icoOptions = document.getElementById('icoOptions');
-        
+
+        const pendingPath = document.body.dataset.pendingFilePath;
+        const pendingName = document.body.dataset.pendingFileName;
+        if (pendingPath && pendingName) {
+            selectedFilePath = pendingPath; // 更新外层状态变量
+            selectedFileName.textContent = `✓ 已选择: ${pendingName}`;
+            // 清除暂存的数据，避免影响后续操作
+            delete document.body.dataset.pendingFilePath;
+            delete document.body.dataset.pendingFileName;
+        }
         // 点击选择文件
         dropZone.addEventListener('click', async () => {
             const result = await window.electronAPI.selectFile(category);
@@ -298,7 +309,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     selectedFileName.textContent = '';
                     return;
                 }
-                selectedFilePath = selectedFileName.textContent.replace('✓ 已选择: ', '');
             }
             if (!targetFormatSelect.value) {
                 showToast('请先选择目标格式', 'error');
