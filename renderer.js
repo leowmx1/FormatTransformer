@@ -105,72 +105,73 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // 欢迎页的文件输入：支持自动跳转到检测到的分类
-    const welcomeFileInput = document.getElementById('welcomeFileInput');
-    const welcomeDropZone = document.getElementById('welcomeDropZone');
-    const welcomeFileName = document.getElementById('welcomeFileName');
-    
-    if (welcomeFileInput && welcomeDropZone) {
-        // 点击拖拽框打开文件选择
-        welcomeDropZone.addEventListener('click', () => {
-            welcomeFileInput.click();
-        });
-        
-        // 文件选择时处理
-        welcomeFileInput.addEventListener('change', (e) => {
-            const f = e.target.files && e.target.files[0];
-            if (!f) return;
-            const filePath = f.path;
-            const result = { filePath: filePath, fileName: f.name };
-            welcomeFileName.textContent = `✓ 已选择: ${f.name}`;
-            const switched = handleFileSelection(result, currentCategory, sidebarButtons);
+    const welcomeDropZone = document.getElementById('WelcomeDropZone');
+    const welcomeSelectedFileName = document.getElementById('WelcomeSelectedFileName');
+    welcomeDropZone.addEventListener('click', async () => {
+        const result = await window.electronAPI.selectFile('welcome');
+        if (result.filePath) {
+            // 检查是否需要自动切换分类
+            const switched = handleFileSelection(result, category, sidebarButtons);
             if (!switched) {
-                // 如果没有切换分类，提示用户并留在欢迎页
-                showToast('无法自动识别分类，请从侧边栏选择合适的分类。', 'info', 4000);
+                // 如果没有切换分类，直接设置文件
+                selectedFilePath = result.filePath;
+                selectedFileName.textContent = `✓ 已选择: ${result.fileName}`;
+                dropZone.classList.remove('dragover');
+            } else {
+                // 如果切换了分类，在事件处理中已设置文件
+                selectedFilePath = result.filePath;
             }
-        });
-        
-        // 拖拽事件处理
-        welcomeDropZone.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            welcomeDropZone.classList.add('dragover');
-        });
+        } else {
+            showToast('文件选择已取消', 'info');
+        }
+    });
 
-        welcomeDropZone.addEventListener('dragenter', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            welcomeDropZone.classList.add('dragover');
-        });
+    // 拖拽事件处理
+    dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        welcomeDropZone.classList.add('dragover');
+    });
 
-        welcomeDropZone.addEventListener('dragleave', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            welcomeDropZone.classList.remove('dragover');
-        });
+    dropZone.addEventListener('dragenter', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        welcomeDropZone.classList.add('dragover');
+    });
 
-        welcomeDropZone.addEventListener('drop', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            welcomeDropZone.classList.remove('dragover');
+    dropZone.addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        welcomeDropZone.classList.remove('dragover');
+    });
+
+    dropZone.addEventListener('drop', async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        welcomeDropZone.classList.remove('dragover');
+
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            const file = files[0];
+            const filePath = file.path;
+            if (!filePath) {
+                showToast('无法获取文件路径，请使用点击选择', 'error');
+                return;
+            }
             
-            const files = e.dataTransfer.files;
-            if (files.length > 0) {
-                const file = files[0];
-                const filePath = file.path;
-                if (!filePath) {
-                    showToast('无法获取文件路径，请使用点击选择', 'error');
-                    return;
-                }
-                
-                const result = { filePath: filePath, fileName: file.name };
-                welcomeFileName.textContent = `✓ 已选择: ${file.name}`;
-                const switched = handleFileSelection(result, currentCategory, sidebarButtons);
-                if (!switched) {
-                    showToast('无法自动识别分类，请从侧边栏选择合适的分类。', 'info', 4000);
-                }
+            // 检查是否需要自动切换分类
+            const result = { filePath: filePath, fileName: file.name };
+            const switched = handleFileSelection(result, category, sidebarButtons);
+            if (!switched) {
+                // 如果没有切换分类，直接设置文件
+                selectedFilePath = filePath;
+                selectedFileName.textContent = `✓ 已选择: ${file.name}`;
+            } else {
+                // 如果切换了分类，在事件处理中已设置文件
+                selectedFilePath = filePath;
             }
-        });
-    }
+        }
+    });
 
     // 加载内容到主容器
     function loadContent(category) {

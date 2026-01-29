@@ -137,12 +137,12 @@
             <div class="operation-container" style="max-width:900px;margin:20px auto;">
                 <h3>快速开始</h3>
                 <div class="form-group">
-                    <input id="welcomeFileInput" type="file" accept="*/*" style="display:none;" />
-                    <div id="welcomeDropZone" class="drop-zone" style="cursor:pointer;">
-                        <div class="drop-zone-content">
-                            <div class="drop-zone-icon">📥</div>
-                            <div class="drop-zone-text">点击此处选择或拖拽文件</div>
-                            <span id="welcomeFileName" class="selected-file-name"></span>
+                    <label><i class="bi bi-cloud-upload"></i> 选择或拖拽文件:</label>
+                    <div id="WelcomeDropZone" class="drop-zone">
+                        <div class="WelcomeDropZone-content">
+                            <div class="WelcomeDropZone-icon"><i class="bi bi-file-arrow-down"></i></div>
+                            <div class="WelcomeDropZone-text">点击选择或拖拽文件到此</div>
+                            <span id="WelcomeSelectedFileName" class="selected-file-name"></span>
                         </div>
                     </div>
                 </div>
