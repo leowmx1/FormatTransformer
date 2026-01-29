@@ -119,7 +119,7 @@ document.addEventListener('DOMContentLoaded', () => {
         welcomeFileInput.addEventListener('change', (e) => {
             const f = e.target.files && e.target.files[0];
             if (!f) return;
-            const filePath = f.path || f.name;
+            const filePath = f.path;
             const result = { filePath: filePath, fileName: f.name };
             welcomeFileName.textContent = `✓ 已选择: ${f.name}`;
             const switched = handleFileSelection(result, currentCategory, sidebarButtons);
@@ -156,7 +156,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const files = e.dataTransfer.files;
             if (files.length > 0) {
                 const file = files[0];
-                const filePath = file.path || file.name;
+                const filePath = file.path;
                 if (!filePath) {
                     showToast('无法获取文件路径，请使用点击选择', 'error');
                     return;
