@@ -279,10 +279,10 @@ document.addEventListener('DOMContentLoaded', () => {
             dropZone.classList.remove('dragover');
         });
 
-        welcomeDropZone.addEventListener('drop', async (e) => {
+        DropZone.addEventListener('drop', async (e) => {
             e.preventDefault();
             e.stopPropagation();
-            welcomeDropZone.classList.remove('dragover');
+            DropZone.classList.remove('dragover');
             
             const files = e.dataTransfer.files;
             if (files.length > 0) {
@@ -298,7 +298,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     
                     if (result && result.filePath) {
                         // 3. 使用返回的临时文件路径进行后续操作
-                        welcomeFileName.textContent = `✓ 已选择: ${result.fileName}`;
+                        selectedFileName.textContent = `✓ 已选择: ${result.fileName}`;
                         const switched = handleFileSelection(result, currentCategory, sidebarButtons);
                         if (!switched) {
                             showToast('无法自动识别分类，请从侧边栏选择合适的分类。', 'info', 4000);
