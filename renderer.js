@@ -299,6 +299,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (result && result.filePath) {
                         // 3. 使用返回的临时文件路径进行后续操作
                         selectedFileName.textContent = `✓ 已选择: ${result.fileName}`;
+                        selectedFilePath = result.filePath;
                         const switched = handleFileSelection(result, currentCategory, sidebarButtons);
                         if (!switched) {
                             showToast('无法自动识别分类，请从侧边栏选择合适的分类。', 'info', 4000);
