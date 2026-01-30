@@ -279,10 +279,10 @@ document.addEventListener('DOMContentLoaded', () => {
             dropZone.classList.remove('dragover');
         });
 
-        DropZone.addEventListener('drop', async (e) => {
+        dropZone.addEventListener('drop', async (e) => {
             e.preventDefault();
             e.stopPropagation();
-            DropZone.classList.remove('dragover');
+            dropZone.classList.remove('dragover');
             
             const files = e.dataTransfer.files;
             if (files.length > 0) {
