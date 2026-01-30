@@ -55,7 +55,7 @@ function handleFileSelection(result, currentCategory, sidebarButtons) {
     const detectedCategory = detectFileCategory(result.fileName);
     
     // 如果检测到的分类与当前分类不同，则自动切换
-    if (detectedCategory && detectedCategory !== currentCategory) {
+    if (detectedCategory) {
         document.body.dataset.pendingFilePath = result.filePath;
         document.body.dataset.pendingFileName = result.fileName;
         // 触发对应分类按钮的点击事件
