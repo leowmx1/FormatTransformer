@@ -271,23 +271,70 @@ document.addEventListener('DOMContentLoaded', () => {
                         <i class="bi bi-chevron-down toggle-icon"></i>
                     </div>
                     <div class="advanced-content" id="advancedContent">
-                        <div class="settings-grid">
-                            <div class="setting-item">
-                                <label>分辨率 (宽 × 高)</label>
-                                <div class="input-row">
-                                    <input type="number" id="imgWidth" placeholder="宽" min="1">
-                                    <span>×</span>
-                                    <input type="number" id="imgHeight" placeholder="高" min="1">
-                                    <button class="lock-btn active" id="aspectLock" title="锁定长宽比">
-                                        <i class="bi bi-link-45deg"></i>
-                                    </button>
+                        <!-- 图片高级设置 -->
+                        <div id="imageSettingsFields" style="display:none;">
+                            <div class="settings-grid">
+                                <div class="setting-item">
+                                    <label>分辨率 (宽 × 高)</label>
+                                    <div class="input-row">
+                                        <input type="number" id="imgWidth" placeholder="宽" min="1">
+                                        <span>×</span>
+                                        <input type="number" id="imgHeight" placeholder="高" min="1">
+                                        <button class="lock-btn active" id="aspectLock" title="锁定长宽比">
+                                            <i class="bi bi-link-45deg"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="setting-item" id="qualitySettingItem">
+                                    <label>输出质量 (0-100)</label>
+                                    <div class="range-input-group">
+                                        <input type="range" id="imgQuality" min="1" max="100" value="100">
+                                        <span class="range-value" id="qualityValue">100</span>
+                                    </div>
                                 </div>
                             </div>
-                            <div class="setting-item" id="qualitySettingItem">
-                                <label>输出质量 (0-100)</label>
-                                <div class="range-input-group">
-                                    <input type="range" id="imgQuality" min="1" max="100" value="100">
-                                    <span class="range-value" id="qualityValue">100</span>
+                        </div>
+
+                        <!-- 视频高级设置 -->
+                        <div id="videoSettingsFields" style="display:none;">
+                            <div class="settings-grid">
+                                <div class="setting-item">
+                                    <label>视频分辨率</label>
+                                    <select id="videoRes">
+                                        <option value="">保持原样</option>
+                                        <option value="1920:1080">1080p (1920×1080)</option>
+                                        <option value="1280:720">720p (1280×720)</option>
+                                        <option value="854:480">480p (854×480)</option>
+                                        <option value="640:360">360p (640×360)</option>
+                                    </select>
+                                </div>
+                                <div class="setting-item">
+                                    <label>视频预设 (速度 vs 体积)</label>
+                                    <select id="videoPreset">
+                                        <option value="medium">Medium (默认)</option>
+                                        <option value="ultrafast">Ultrafast (最快)</option>
+                                        <option value="veryfast">Veryfast</option>
+                                        <option value="fast">Fast</option>
+                                        <option value="slow">Slow (更小体积)</option>
+                                        <option value="veryslow">Veryslow (最小体积)</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 音频高级设置 -->
+                        <div id="audioSettingsFields" style="display:none;">
+                            <div class="settings-grid">
+                                <div class="setting-item">
+                                    <label>音频码率</label>
+                                    <select id="audioBitrate">
+                                        <option value="">保持原样</option>
+                                        <option value="320k">320kbps (极高)</option>
+                                        <option value="256k">256kbps (高)</option>
+                                        <option value="192k">192kbps (标准)</option>
+                                        <option value="128k">128kbps (中)</option>
+                                        <option value="64k">64kbps (低)</option>
+                                    </select>
                                 </div>
                             </div>
                         </div>
@@ -315,9 +362,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const icoOptions = document.getElementById('icoOptions');
         const imageAdvanced = document.getElementById('imageAdvancedSettings');
 
-        if (category === 'images') {
+        if (category === 'images' || category === 'videos' || category === 'audio') {
             imageAdvanced.style.display = 'block';
             
+            // 根据分类显示不同的字段
+            document.getElementById('imageSettingsFields').style.display = category === 'images' ? 'block' : 'none';
+            document.getElementById('videoSettingsFields').style.display = category === 'videos' ? 'block' : 'none';
+            document.getElementById('audioSettingsFields').style.display = category === 'audio' ? 'block' : 'none';
+
             const toggle = document.getElementById('advancedToggle');
             const content = document.getElementById('advancedContent');
             const icon = toggle.querySelector('.toggle-icon');
@@ -496,6 +548,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 options.quality = parseInt(quality, 10);
             }
 
+            // 收集视频高级选项
+            if (category === 'videos') {
+                const res = document.getElementById('videoRes').value;
+                const preset = document.getElementById('videoPreset').value;
+                if (res) options.videoRes = res;
+                if (preset) options.videoPreset = preset;
+            }
+
+            // 收集音频高级选项
+            if (category === 'audio') {
+                const bitrate = document.getElementById('audioBitrate').value;
+                if (bitrate) options.audioBitrate = bitrate;
+            }
+
             // 收集 ICO 选项（单选）
             if (category === 'images' && targetFormat.toLowerCase() === 'ico') {
                 const selected = icoOptions.querySelector('input[name="icoSize"]:checked');
@@ -527,7 +593,8 @@ document.addEventListener('DOMContentLoaded', () => {
         targetFormatSelect.addEventListener('change', (e) => {
             const format = e.target.value.toLowerCase();
             const isIco = format === 'ico';
-            const supportsQuality = ['jpg', 'jpeg', 'webp'].includes(format);
+            const supportsImgQuality = ['jpg', 'jpeg', 'webp'].includes(format);
+            const supportsAudioBitrate = ['mp3', 'aac', 'm4a', 'ogg', 'wma'].includes(format);
             
             if (category === 'images') {
                 if (isIco) {
@@ -540,8 +607,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     // 根据格式显示或隐藏质量设置
                     const qualityItem = document.getElementById('qualitySettingItem');
                     if (qualityItem) {
-                        qualityItem.style.display = supportsQuality ? 'flex' : 'none';
+                        qualityItem.style.display = supportsImgQuality ? 'flex' : 'none';
                     }
+                }
+            }
+
+            if (category === 'audio') {
+                const audioBitrateItem = document.getElementById('audioSettingsFields');
+                if (audioBitrateItem) {
+                    audioBitrateItem.style.display = supportsAudioBitrate ? 'block' : 'none';
                 }
             }
         });
