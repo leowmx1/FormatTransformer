@@ -6,4 +6,5 @@ contextBridge.exposeInMainWorld('electronAPI', {
     convertFile: (filePath, targetFormat, category, options) => 
         ipcRenderer.invoke('convert-file', { filePath, targetFormat, category, options }),
     handleDroppedFile: (arrayBuffer, fileName) => ipcRenderer.invoke('handle-dropped-file', arrayBuffer, fileName),
+    onProgress: (callback) => ipcRenderer.on('conversion-progress', (_event, value) => callback(value)),
 });

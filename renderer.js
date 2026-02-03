@@ -88,6 +88,35 @@ document.addEventListener('DOMContentLoaded', () => {
     const mainContent = document.querySelector('.main-content');
     let selectedFilePath = null;
     let currentCategory = null;
+    let progressTimer = null;
+    let currentProgress = 0;
+
+    function updateProgressBar(value) {
+        const progressBar = document.getElementById('progressBar');
+        const progressText = document.getElementById('progressText');
+        const progressContainer = document.getElementById('progressContainer');
+        
+        if (progressBar && progressText && progressContainer) {
+            progressContainer.style.display = 'block';
+            progressBar.style.width = `${value}%`;
+            progressText.textContent = `${value}%`;
+        }
+    }
+
+    // 监听进度更新
+    window.electronAPI.onProgress((value) => {
+        // 如果后端传来的进度大于当前进度，则更新
+        if (value > currentProgress) {
+            currentProgress = value;
+            updateProgressBar(currentProgress);
+        }
+        
+        // 如果进度达到100，清除定时器
+        if (currentProgress >= 100 && progressTimer) {
+            clearInterval(progressTimer);
+            progressTimer = null;
+        }
+    });
 
     // 侧边栏按钮点击事件
     sidebarButtons.forEach(button => {
@@ -221,6 +250,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div style="margin-top:6px;color:#666;font-size:13px;"><i class="bi bi-info-circle" style="margin-right:4px;"></i>选择"多尺寸"生成常用尺寸集合，或选择单一尺寸。</div>
                 </div>
                 <button id="startConversion"><i class="bi bi-play-circle" style="margin-right:6px;"></i>开始转换</button>
+                
+                <div id="progressContainer" style="display: none; margin-top: 24px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px; color: var(--text-secondary);">
+                        <span>转换进度</span>
+                        <span id="progressText">0%</span>
+                    </div>
+                    <div class="progress-bar-bg">
+                        <div id="progressBar" class="progress-bar-fill"></div>
+                    </div>
+                </div>
             </div>
         `;
         
@@ -344,6 +383,21 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             showToast('正在转换文件，请稍候...', 'info', 999999);
+            
+            // 重置并显示进度条
+            currentProgress = 0;
+            updateProgressBar(0);
+            
+            // 启动假进度条定时器
+            if (progressTimer) clearInterval(progressTimer);
+            progressTimer = setInterval(() => {
+                // 30%到95%之间进行假进度模拟
+                if (currentProgress >= 30 && currentProgress < 95) {
+                    currentProgress += 2;
+                    updateProgressBar(currentProgress);
+                }
+            }, 300); // 每300ms增加1%
+
             convertFile(selectedFilePath, category, targetFormat, options);
         });
 
@@ -368,6 +422,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 const toasts = document.querySelectorAll('.toast.info');
                 toasts.forEach(t => t.remove());
 
+                // 清除定时器并设置进度为100%
+                if (progressTimer) clearInterval(progressTimer);
+                updateProgressBar(100);
+                
+                // 延迟后隐藏进度条
+                setTimeout(() => {
+                    const progressContainer = document.getElementById('progressContainer');
+                    if (progressContainer) progressContainer.style.display = 'none';
+                }, 2000);
+
                 if (result.success) {
                     let msg = '转换成功！';
                     if (result.extra && result.extra.icoSizes) {
@@ -384,6 +448,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 const toasts = document.querySelectorAll('.toast.info');
                 toasts.forEach(t => t.remove());
                 
+                if (progressTimer) clearInterval(progressTimer);
+                const progressContainer = document.getElementById('progressContainer');
+                if (progressContainer) progressContainer.style.display = 'none';
+
                 showToast(`错误: ${error.message}`, 'error', 5000);
             });
     }

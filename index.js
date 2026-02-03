@@ -4,8 +4,8 @@ const fsp = require('fs').promises;
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
-const convert = require('libreoffice-convert');
 const { nativeImage } = require('electron');
+const { Worker } = require('worker_threads');
 
 async function ensurePngIcon() {
     try {
@@ -147,133 +147,57 @@ ipcMain.handle('convert-file', async (event, { filePath, targetFormat, category,
         
         const outputPath = result.filePath;
         
-        // 根据分类调用相应的转换函数
-        let extraInfo = null;
-        switch (category) {
-            case 'images':
-                extraInfo = await convertImage(filePath, outputPath, targetFormat, options);
-                break;
-            case 'documents':
-                await convertDocument(filePath, outputPath, targetFormat);
-                break;
-            case 'videos':
-            case 'audio':
-                // 暂时使用复制作为示例
-                fs.copyFileSync(filePath, outputPath);
-                break;
-            default:
-                fs.copyFileSync(filePath, outputPath);
-        }
-        
-        return { 
-            success: true, 
-            message: `文件已成功转换并保存至: ${outputPath}`,
-            outputPath: outputPath,
-            extra: extraInfo
-        };
+        // 使用 Worker 进行转换
+        return new Promise((resolve) => {
+            const worker = new Worker(path.join(__dirname, 'worker.js'));
+            
+            worker.on('message', (msg) => {
+                if (msg.type === 'progress') {
+                    // 发送进度给渲染进程
+                    event.sender.send('conversion-progress', msg.value);
+                } else if (msg.type === 'success') {
+                    resolve({ 
+                        success: true, 
+                        message: `文件已成功转换并保存至: ${msg.outputPath}`,
+                        outputPath: msg.outputPath,
+                        extra: msg.extra
+                    });
+                    worker.terminate();
+                } else if (msg.type === 'error') {
+                    resolve({ 
+                        success: false, 
+                        message: `转换失败: ${msg.message}` 
+                    });
+                    worker.terminate();
+                }
+            });
+
+            worker.on('error', (err) => {
+                resolve({ 
+                    success: false, 
+                    message: `Worker错误: ${err.message}` 
+                });
+                worker.terminate();
+            });
+
+            worker.on('exit', (code) => {
+                if (code !== 0) {
+                    console.error(`Worker stopped with exit code ${code}`);
+                }
+            });
+
+            // 启动任务
+            worker.postMessage({ filePath, outputPath, targetFormat, category, options });
+        });
+
     } catch (error) {
         return { 
             success: false, 
-            message: `转换失败: ${error.message}` 
+            message: `转换初始化失败: ${error.message}` 
         };
     }
 });
 
-// 图片转换函数（使用 ImageMagick CLI，适配 Node.js 22）
-async function convertImage(inputPath, outputPath, targetFormat, options) {
-    try {
-        const format = targetFormat.toLowerCase();
-        const { execFileSync } = require('child_process');
-        const os = require('os');
-
-        // 检查 magick 是否可用
-        try {
-            execFileSync('magick', ['-version'], { stdio: 'ignore' });
-        } catch (e) {
-            throw new Error('未找到 ImageMagick (magick)。请安装 ImageMagick 并确保 magick 在 PATH 中。');
-        }
-
-        // ICO 特殊处理：使用 ImageMagick 的 auto-resize 或者按 sizes 生成
-        if (format === 'ico') {
-            if (options && Array.isArray(options.icoSizes) && options.icoSizes.length > 0) {
-                const tmpDir = os.tmpdir();
-                const tmpFiles = [];
-                for (const sRaw of options.icoSizes) {
-                    const s = parseInt(sRaw, 10);
-                    if (!s) continue;
-                    const tmpPng = path.join(tmpDir, `ft_tmp_${Date.now()}_${s}.png`);
-                    execFileSync('magick', [inputPath, '-resize', `${s}x${s}`, '-background', 'none', '-gravity', 'center', '-extent', `${s}x${s}`, tmpPng]);
-                    tmpFiles.push(tmpPng);
-                }
-                if (tmpFiles.length === 0) throw new Error('无效的 ICO 尺寸参数');
-                execFileSync('magick', [...tmpFiles, outputPath]);
-                // 清理临时文件
-                tmpFiles.forEach(f => { try { fs.unlinkSync(f); } catch (_) {} });
-                return { icoSizes: options.icoSizes.map(s => ({ width: s, height: s })) };
-            } else {
-                execFileSync('magick', [inputPath, '-define', 'icon:auto-resize', outputPath]);
-                return { icoSizes: null };
-            }
-        }
-
-        // 其他格式使用 magick CLI 转换并设置合理参数
-        const args = [inputPath];
-        if (format === 'jpg' || format === 'jpeg') {
-            args.push('-quality', '90', outputPath);
-        } else if (format === 'png') {
-            args.push('-background', 'none', '-flatten', outputPath);
-        } else if (format === 'webp') {
-            args.push('-quality', '90', outputPath);
-        } else if (format === 'gif') {
-            args.push(outputPath);
-        } else {
-            args.push(outputPath);
-        }
-
-        execFileSync('magick', args, { stdio: 'ignore' });
-        return null;
-    } catch (error) {
-        throw new Error(`图片转换失败: ${error.message}`);
-    }
-}
-
-// 文档转换函数 (使用 LibreOffice)
-async function convertDocument(inputPath, outputPath, targetFormat) {
-    const format = targetFormat.toLowerCase();
-    const ext = '.' + format.replace(/^\./, '');
-
-    // 优先使用 LibreOffice CLI（soffice），更稳定且不依赖 tmp 清理库
-    try {
-        const { execSync } = require('child_process');
-        execSync(`soffice --headless --convert-to ${format} --outdir "${path.dirname(outputPath)}" "${inputPath}"`, { stdio: 'ignore' });
-
-        const generatedName = path.basename(inputPath, path.extname(inputPath)) + '.' + format;
-        const tempOutputPath = path.join(path.dirname(outputPath), generatedName);
-        if (fs.existsSync(tempOutputPath)) {
-            if (tempOutputPath !== outputPath) fs.renameSync(tempOutputPath, outputPath);
-            return;
-        } else {
-            // CLI 没有生成文件，回退到库方法
-            throw new Error('LibreOffice CLI 未生成输出文件，回退到库方法');
-        }
-    } catch (cliErr) {
-        // 回退到 libreoffice-convert（使用回调风格以避免 promisify 问题）
-        try {
-            const fileBuffer = fs.readFileSync(inputPath);
-            const convertedBuffer = await new Promise((resolve, reject) => {
-                convert.convert(fileBuffer, ext, (err, done) => {
-                    if (err) return reject(err);
-                    resolve(done);
-                });
-            });
-            fs.writeFileSync(outputPath, convertedBuffer);
-            return;
-        } catch (libErr) {
-            // 返回详细错误，便于排查
-            throw new Error(`文档转换失败: CLI 错误: ${cliErr.message}; libreoffice-convert 错误: ${libErr.message}`);
-        }
-    }
-}
 // 处理拖拽文件请求
 ipcMain.handle('handle-dropped-file', async (event, arrayBuffer, fileName) => {
   // 注意：这里假设你已经正确引入了 fs, path, os 模块
