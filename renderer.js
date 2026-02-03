@@ -185,21 +185,20 @@ document.addEventListener('DOMContentLoaded', () => {
             showToast('正在处理拖拽文件...', 'info', 3000);
             
             try {
-                // 1. 将 File 对象读取为 ArrayBuffer
-                const arrayBuffer = await file.arrayBuffer();
+                // 获取文件真实路径，避免生成临时文件
+                const filePath = window.electronAPI.getFilePath(file);
                 
-                // 2. 调用主进程API，保存文件并获取路径
-                const result = await window.electronAPI.handleDroppedFile(arrayBuffer, file.name);
-                
-                if (result && result.filePath) {
-                    // 3. 使用返回的临时文件路径进行后续操作
+                if (filePath) {
+                    const result = { filePath: filePath, fileName: file.name };
+                    
+                    // 3. 使用返回的文件路径进行后续操作
                     welcomeSelectedFileName.textContent = `✓ 已选择: ${result.fileName}`;
                     const switched = handleFileSelection(result, currentCategory, sidebarButtons);
                     if (!switched) {
                         showToast('无法自动识别分类，请从侧边栏选择合适的分类。', 'info', 4000);
                     }
                 } else {
-                    showToast('处理文件失败，未返回路径', 'error');
+                    showToast('无法获取文件路径', 'error');
                 }
             } catch (error) {
                 console.error('拖拽文件处理全过程错误:', error);
@@ -329,27 +328,26 @@ document.addEventListener('DOMContentLoaded', () => {
                 showToast('正在处理拖拽文件...', 'info', 3000);
                 
                 try {
-                    // 1. 将 File 对象读取为 ArrayBuffer
-                    const arrayBuffer = await file.arrayBuffer();
+                // 获取文件真实路径，避免生成临时文件
+                const filePath = window.electronAPI.getFilePath(file);
+                
+                if (filePath) {
+                    const result = { filePath: filePath, fileName: file.name };
                     
-                    // 2. 调用主进程API，保存文件并获取路径
-                    const result = await window.electronAPI.handleDroppedFile(arrayBuffer, file.name);
-                    
-                    if (result && result.filePath) {
-                        // 3. 使用返回的临时文件路径进行后续操作
-                        selectedFileName.textContent = `✓ 已选择: ${result.fileName}`;
-                        selectedFilePath = result.filePath;
-                        const switched = handleFileSelection(result, currentCategory, sidebarButtons);
-                        if (!switched) {
-                            showToast('无法自动识别分类，请从侧边栏选择合适的分类。', 'info', 4000);
-                        }
-                    } else {
-                        showToast('处理文件失败，未返回路径', 'error');
+                    // 3. 使用返回的文件路径进行后续操作
+                    selectedFileName.textContent = `✓ 已选择: ${result.fileName}`;
+                    selectedFilePath = result.filePath;
+                    const switched = handleFileSelection(result, currentCategory, sidebarButtons);
+                    if (!switched) {
+                        showToast('无法自动识别分类，请从侧边栏选择合适的分类。', 'info', 4000);
                     }
-                } catch (error) {
-                    console.error('拖拽文件处理全过程错误:', error);
-                    showToast(`处理拖拽文件失败: ${error.message}`, 'error', 5000);
+                } else {
+                    showToast('无法获取文件路径', 'error');
                 }
+            } catch (error) {
+                console.error('拖拽文件处理全过程错误:', error);
+                showToast(`处理拖拽文件失败: ${error.message}`, 'error', 5000);
+            }
             }
         });
         
