@@ -1,14 +1,20 @@
 :root {
-    --primary-color: #2563eb;
-    --primary-hover: #1d4ed8;
-    --bg-color: #f8f9fa;
+    --primary-color: #3b82f6; /* Lighter blue for a modern feel */
+    --primary-hover: #2563eb;
+    --primary-light: #eff6ff;
+    --bg-color: #f3f4f6; /* Slightly darker background for contrast */
     --surface-color: #ffffff;
-    --text-main: #1f2937;
+    --text-main: #111827;
     --text-secondary: #6b7280;
     --border-color: #e5e7eb;
     --success-color: #10b981;
     --error-color: #ef4444;
     --info-color: #3b82f6;
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    --radius-md: 8px;
+    --radius-lg: 12px;
 }
 
 * {
@@ -16,12 +22,13 @@
 }
 
 body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     margin: 0;
     padding: 0;
     background-color: var(--bg-color);
     color: var(--text-main);
     min-height: 100vh;
+    line-height: 1.5;
 }
 
 .container {
@@ -32,41 +39,42 @@ body {
 
 /* Sidebar */
 .sidebar {
-    width: 240px;
+    width: 260px;
     background-color: var(--surface-color);
-    padding: 24px 16px;
+    padding: 32px 20px;
     display: flex;
     flex-direction: column;
-    border-right: 1px solid var(--border-color);
+    border-right: none;
+    box-shadow: var(--shadow-sm);
+    z-index: 10;
 }
 
 .sidebar h2 {
-    margin: 0 0 24px 8px;
+    margin: 0 0 32px 12px;
     color: var(--text-main);
-    font-size: 18px;
-    font-weight: 600;
+    font-size: 20px;
+    font-weight: 700;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 12px;
+    letter-spacing: -0.025em;
 }
 
 .sidebar hr {
-    border: none;
-    border-top: 1px solid var(--border-color);
-    margin: 16px 0;
+    display: none; /* Hide HRs for cleaner look */
 }
 
 .sidebar-button {
     display: flex;
     align-items: center;
     width: 100%;
-    padding: 10px 12px;
-    margin-bottom: 4px;
+    padding: 12px 16px;
+    margin-bottom: 8px;
     background-color: transparent;
     border: none;
-    border-radius: 6px;
+    border-radius: var(--radius-md);
     color: var(--text-secondary);
-    font-size: 14px;
+    font-size: 15px;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.2s ease;
@@ -74,60 +82,83 @@ body {
 }
 
 .sidebar-button i.bi {
-    margin-right: 12px;
+    margin-right: 14px;
     font-size: 18px;
+    color: #9ca3af;
+    transition: color 0.2s;
 }
 
 .sidebar-button:hover {
-    background-color: #f3f4f6;
+    background-color: var(--bg-color);
+    color: var(--text-main);
+    transform: translateX(2px);
+}
+
+.sidebar-button:hover i.bi {
     color: var(--text-main);
 }
 
 .sidebar-button.active {
-    background-color: #eff6ff;
+    background-color: var(--primary-light);
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+.sidebar-button.active i.bi {
     color: var(--primary-color);
 }
 
 /* Main Content */
 .main-content {
     flex: 1;
-    padding: 40px;
+    padding: 48px;
     overflow-y: auto;
     background-color: var(--bg-color);
 }
 
 .main-content h1 {
     color: var(--text-main);
-    font-size: 28px;
-    margin: 0 0 10px 0;
-    font-weight: 600;
+    font-size: 32px;
+    margin: 0 0 12px 0;
+    font-weight: 700;
+    letter-spacing: -0.025em;
 }
 
 .main-content > p {
     color: var(--text-secondary);
     font-size: 16px;
     margin-top: 0;
+    max-width: 600px;
+    line-height: 1.6;
 }
 
 .logo {
-    font-size: 48px;
-    margin-bottom: 16px;
+    font-size: 56px;
+    margin-bottom: 24px;
+    filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));
 }
 
 /* Operation Container */
 .operation-container {
-    margin-top: 32px;
-    padding: 32px;
+    margin-top: 40px;
+    padding: 40px;
     background-color: var(--surface-color);
-    border-radius: 8px;
-    border: 1px solid var(--border-color);
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    border-radius: var(--radius-lg);
+    border: 1px solid rgba(255,255,255,0.5);
+    box-shadow: var(--shadow-md);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.operation-container:hover {
+    box-shadow: var(--shadow-lg);
 }
 
 .operation-container h3 {
     margin-top: 0;
-    font-size: 18px;
+    font-size: 20px;
     font-weight: 600;
+    margin-bottom: 24px;
+    color: var(--text-main);
 }
 
 .form-group {
@@ -150,49 +181,56 @@ body {
 
 /* Buttons */
 .select-file-btn {
-    padding: 10px 20px;
+    padding: 10px 24px;
     background-color: var(--primary-color);
     color: white;
     border: none;
-    border-radius: 6px;
+    border-radius: var(--radius-md);
     font-size: 14px;
     font-weight: 500;
     cursor: pointer;
-    transition: background-color 0.2s;
+    transition: all 0.2s;
+    box-shadow: var(--shadow-sm);
 }
 
 .select-file-btn:hover {
     background-color: var(--primary-hover);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
 }
 
 #startConversion {
     width: 100%;
-    padding: 12px;
+    padding: 14px;
     background-color: var(--primary-color);
     color: white;
     border: none;
-    border-radius: 6px;
+    border-radius: var(--radius-md);
     font-size: 16px;
-    font-weight: 500;
+    font-weight: 600;
     cursor: pointer;
-    transition: background-color 0.2s;
-    margin-top: 10px;
+    transition: all 0.2s;
+    margin-top: 16px;
+    box-shadow: var(--shadow-sm);
 }
 
 #startConversion:hover {
     background-color: var(--primary-hover);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
 }
 
 /* Inputs & Selects */
 .form-group select {
     width: 100%;
     max-width: 400px;
-    padding: 10px;
+    padding: 12px;
     border: 1px solid var(--border-color);
-    border-radius: 6px;
+    border-radius: var(--radius-md);
     font-size: 14px;
-    background-color: var(--surface-color);
+    background-color: var(--bg-color);
     color: var(--text-main);
+    transition: all 0.2s;
 }
 
 .form-group select:focus {
@@ -204,17 +242,18 @@ body {
 /* Drop Zone */
 .drop-zone {
     border: 2px dashed var(--border-color);
-    border-radius: 8px;
-    padding: 40px;
+    border-radius: var(--radius-lg);
+    padding: 48px;
     text-align: center;
     cursor: pointer;
     transition: all 0.2s;
-    background-color: #fafafa;
+    background-color: var(--bg-color);
 }
 
 .drop-zone:hover, .drop-zone.dragover {
     border-color: var(--primary-color);
-    background-color: #eff6ff;
+    background-color: var(--primary-light);
+    transform: scale(1.01);
 }
 
 .drop-zone-icon i.bi {
@@ -243,23 +282,24 @@ body {
 /* Toasts */
 .toast-container {
     position: fixed;
-    top: 24px;
-    right: 24px;
+    top: 32px;
+    right: 32px;
     z-index: 1000;
 }
 
 .toast {
     display: flex;
     align-items: center;
-    padding: 12px 16px;
+    padding: 16px 20px;
     margin-bottom: 12px;
-    border-radius: 6px;
+    border-radius: var(--radius-md);
     font-size: 14px;
+    font-weight: 500;
     background-color: var(--surface-color);
-    border: 1px solid var(--border-color);
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(0,0,0,0.05);
+    box-shadow: var(--shadow-lg);
     animation: slideIn 0.3s ease-out;
-    min-width: 300px;
+    min-width: 320px;
 }
 
 .toast.success {
@@ -308,9 +348,9 @@ body {
 /* ICO Options */
 #icoOptions {
     background-color: #fff7ed;
-    padding: 16px;
-    border-radius: 6px;
-    margin: 16px 0;
+    padding: 20px;
+    border-radius: var(--radius-md);
+    margin: 20px 0;
     border: 1px solid #fed7aa;
 }
 
@@ -327,11 +367,12 @@ body {
 /* Progress Bar */
 .progress-bar-bg {
     width: 100%;
-    height: 10px;
-    background-color: var(--border-color);
-    border-radius: 5px;
+    height: 12px;
+    background-color: var(--bg-color);
+    border-radius: 6px;
     overflow: hidden;
-    margin-bottom: 5px;
+    margin-bottom: 8px;
+    border: 1px solid var(--border-color);
 }
 
 .progress-bar-fill {
@@ -339,5 +380,6 @@ body {
     background-color: var(--success-color);
     width: 0%;
     transition: width 0.3s ease;
-    border-radius: 5px;
+    border-radius: 6px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
 }
