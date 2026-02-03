@@ -63,7 +63,9 @@ function detectFileCategory(fileName) {
                 btn => btn.getAttribute('data-category') === detectedCategory
             );
             if (targetButton) {
-                showToast(`📁 已自动切换到${categoryNameMap[detectedCategory]}分类`, 'info', 3000);
+                if (detectedCategory !== currentCategory) {
+                    showToast(`📁 已自动切换到${categoryNameMap[detectedCategory]}分类`, 'info', 3000);
+                }
                 setTimeout(() => {
                     targetButton.click();
                     // 在新分类加载后，重新获取dropZone并设置文件
@@ -281,7 +283,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                     </button>
                                 </div>
                             </div>
-                            <div class="setting-item">
+                            <div class="setting-item" id="qualitySettingItem">
                                 <label>输出质量 (0-100)</label>
                                 <div class="range-input-group">
                                     <input type="range" id="imgQuality" min="1" max="100" value="100">
@@ -523,7 +525,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 显示/隐藏 ICO 分辨率选项及高级设置
         targetFormatSelect.addEventListener('change', (e) => {
-            const isIco = e.target.value.toLowerCase() === 'ico';
+            const format = e.target.value.toLowerCase();
+            const isIco = format === 'ico';
+            const supportsQuality = ['jpg', 'jpeg', 'webp'].includes(format);
+            
             if (category === 'images') {
                 if (isIco) {
                     icoOptions.style.display = 'block';
@@ -531,6 +536,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else {
                     icoOptions.style.display = 'none';
                     imageAdvanced.style.display = 'block';
+                    
+                    // 根据格式显示或隐藏质量设置
+                    const qualityItem = document.getElementById('qualitySettingItem');
+                    if (qualityItem) {
+                        qualityItem.style.display = supportsQuality ? 'flex' : 'none';
+                    }
                 }
             }
         });
