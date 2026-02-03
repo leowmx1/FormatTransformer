@@ -12,5 +12,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
         }
         return file.path;
     },
+    getImageDimensions: (filePath) => ipcRenderer.invoke('get-image-dimensions', filePath),
     onProgress: (callback) => ipcRenderer.on('conversion-progress', (_event, value) => callback(value)),
 });

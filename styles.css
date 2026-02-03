@@ -364,6 +364,110 @@ body {
     margin-right: 6px;
 }
 
+/* Advanced Settings */
+.advanced-settings {
+    margin: 20px 0;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+}
+
+.advanced-header {
+    background-color: var(--bg-color);
+    padding: 12px 16px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 600;
+    font-size: 14px;
+    user-select: none;
+    transition: background-color 0.2s;
+}
+
+.advanced-header:hover {
+    background-color: var(--border-color);
+}
+
+.advanced-content {
+    padding: 20px;
+    display: none;
+    background-color: var(--surface-color);
+    border-top: 1px solid var(--border-color);
+}
+
+.advanced-content.show {
+    display: block;
+}
+
+.settings-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.setting-item {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.setting-item label {
+    font-size: 13px;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.input-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.input-row input[type="number"] {
+    width: 80px;
+    padding: 8px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-size: 13px;
+}
+
+.input-row span {
+    color: var(--text-secondary);
+}
+
+.lock-btn {
+    background: none;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 6px 10px;
+    cursor: pointer;
+    color: var(--text-secondary);
+    transition: all 0.2s;
+}
+
+.lock-btn.active {
+    color: var(--primary-color);
+    border-color: var(--primary-color);
+    background-color: var(--primary-light);
+}
+
+.range-input-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.range-input-group input[type="range"] {
+    flex: 1;
+}
+
+.range-value {
+    font-size: 13px;
+    font-weight: 600;
+    min-width: 36px;
+}
+
 /* Progress Bar */
 .progress-bar-bg {
     width: 100%;

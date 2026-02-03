@@ -226,3 +226,12 @@ ipcMain.handle('handle-dropped-file', async (event, arrayBuffer, fileName) => {
     throw new Error(`保存拖拽文件失败: ${error.message}`);
   }
 });
+ipcMain.handle('get-image-dimensions', async (event, filePath) => {
+    try {
+        const img = nativeImage.createFromPath(filePath);
+        const size = img.getSize();
+        return { width: size.width, height: size.height };
+    } catch (e) {
+        return null;
+    }
+});

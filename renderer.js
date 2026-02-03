@@ -49,38 +49,53 @@ function detectFileCategory(fileName) {
 }
 
 // 处理文件选择并自动切换分类
-function handleFileSelection(result, currentCategory, sidebarButtons) {
-    if (!result.filePath) return false;
-    
-    const detectedCategory = detectFileCategory(result.fileName);
-    
-    // 如果检测到的分类与当前分类不同，则自动切换
-    if (detectedCategory) {
-        document.body.dataset.pendingFilePath = result.filePath;
-        document.body.dataset.pendingFileName = result.fileName;
-        // 触发对应分类按钮的点击事件
-        const targetButton = Array.from(sidebarButtons).find(
-            btn => btn.getAttribute('data-category') === detectedCategory
-        );
-        if (targetButton) {
-            showToast(`📁 已自动切换到${categoryNameMap[detectedCategory]}分类`, 'info', 3000);
-            setTimeout(() => {
-                targetButton.click();
-                // 在新分类加载后，重新获取dropZone并设置文件
+    async function handleFileSelection(result, currentCategory, sidebarButtons) {
+        if (!result.filePath) return false;
+        
+        const detectedCategory = detectFileCategory(result.fileName);
+        
+        // 如果检测到的分类与当前分类不同，则自动切换
+        if (detectedCategory) {
+            document.body.dataset.pendingFilePath = result.filePath;
+            document.body.dataset.pendingFileName = result.fileName;
+            // 触发对应分类按钮的点击事件
+            const targetButton = Array.from(sidebarButtons).find(
+                btn => btn.getAttribute('data-category') === detectedCategory
+            );
+            if (targetButton) {
+                showToast(`📁 已自动切换到${categoryNameMap[detectedCategory]}分类`, 'info', 3000);
                 setTimeout(() => {
-                    const dropZone = document.getElementById('dropZone');
-                    const selectedFileName = document.getElementById('selectedFileName');
-                    if (dropZone && selectedFileName) {
-                        selectedFileName.textContent = `✓ 已选择: ${result.fileName}`;
-                        dropZone.classList.remove('dragover');
-                    }
-                }, 100);
-            }, 200);
-            return true; // 返回true表示已切换分类
+                    targetButton.click();
+                    // 在新分类加载后，重新获取dropZone并设置文件
+                    setTimeout(async () => {
+                        const dropZone = document.getElementById('dropZone');
+                        const selectedFileName = document.getElementById('selectedFileName');
+                        if (dropZone && selectedFileName) {
+                            selectedFileName.textContent = `✓ 已选择: ${result.fileName}`;
+                            dropZone.classList.remove('dragover');
+                            
+                            // 如果是图片分类，获取并设置原始尺寸
+                            if (detectedCategory === 'images') {
+                                const dims = await window.electronAPI.getImageDimensions(result.filePath);
+                                if (dims) {
+                                    const wInput = document.getElementById('imgWidth');
+                                    const hInput = document.getElementById('imgHeight');
+                                    if (wInput && hInput) {
+                                        wInput.value = dims.width;
+                                        hInput.value = dims.height;
+                                        // 触发 input 事件以更新锁定比例
+                                        wInput.dispatchEvent(new Event('input'));
+                                    }
+                                }
+                            }
+                        }
+                    }, 100);
+                }, 200);
+                return true; // 返回true表示已切换分类
+            }
         }
+        return false; // 返回false表示没有切换分类
     }
-    return false; // 返回false表示没有切换分类
-}
 
 document.addEventListener('DOMContentLoaded', () => {
     // 选择器和事件监听器
@@ -238,15 +253,43 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="form-group" id="icoOptions" style="display:none;">
                     <label><i class="bi bi-aspect-ratio"></i> ICO 分辨率（单选）:</label>
                     <div>
-                        <label><input type="radio" name="icoSize" value="multi" checked> 多尺寸（16,32,48,64,128,256）</label>
                         <label><input type="radio" name="icoSize" value="16"> 16×16</label>
                         <label><input type="radio" name="icoSize" value="32"> 32×32</label>
                         <label><input type="radio" name="icoSize" value="48"> 48×48</label>
                         <label><input type="radio" name="icoSize" value="64"> 64×64</label>
                         <label><input type="radio" name="icoSize" value="128"> 128×128</label>
-                        <label><input type="radio" name="icoSize" value="256"> 256×256</label>
+                        <label><input type="radio" name="icoSize" value="256" checked> 256×256</label>
                     </div>
-                    <div style="margin-top:6px;color:#666;font-size:13px;"><i class="bi bi-info-circle" style="margin-right:4px;"></i>选择"多尺寸"生成常用尺寸集合，或选择单一尺寸。</div>
+                    <div style="margin-top:6px;color:#666;font-size:13px;"><i class="bi bi-info-circle" style="margin-right:4px;"></i>请选择生成的 ICO 图标尺寸。</div>
+                </div>
+
+                <div id="imageAdvancedSettings" class="advanced-settings" style="display:none;">
+                    <div class="advanced-header" id="advancedToggle">
+                        <span><i class="bi bi-gear-fill"></i> 高级设置 (可选)</span>
+                        <i class="bi bi-chevron-down toggle-icon"></i>
+                    </div>
+                    <div class="advanced-content" id="advancedContent">
+                        <div class="settings-grid">
+                            <div class="setting-item">
+                                <label>分辨率 (宽 × 高)</label>
+                                <div class="input-row">
+                                    <input type="number" id="imgWidth" placeholder="宽" min="1">
+                                    <span>×</span>
+                                    <input type="number" id="imgHeight" placeholder="高" min="1">
+                                    <button class="lock-btn active" id="aspectLock" title="锁定长宽比">
+                                        <i class="bi bi-link-45deg"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="setting-item">
+                                <label>输出质量 (0-100)</label>
+                                <div class="range-input-group">
+                                    <input type="range" id="imgQuality" min="1" max="100" value="100">
+                                    <span class="range-value" id="qualityValue">100</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <button id="startConversion"><i class="bi bi-play-circle" style="margin-right:6px;"></i>开始转换</button>
                 
@@ -268,6 +311,63 @@ document.addEventListener('DOMContentLoaded', () => {
         const newStartButton = document.getElementById('startConversion');
         const targetFormatSelect = document.getElementById('targetFormat');
         const icoOptions = document.getElementById('icoOptions');
+        const imageAdvanced = document.getElementById('imageAdvancedSettings');
+
+        if (category === 'images') {
+            imageAdvanced.style.display = 'block';
+            
+            const toggle = document.getElementById('advancedToggle');
+            const content = document.getElementById('advancedContent');
+            const icon = toggle.querySelector('.toggle-icon');
+            
+            toggle.addEventListener('click', () => {
+                content.classList.toggle('show');
+                icon.classList.toggle('bi-chevron-up');
+                icon.classList.toggle('bi-chevron-down');
+            });
+
+            // 质量滑块
+            const qualityInput = document.getElementById('imgQuality');
+            const qualityValue = document.getElementById('qualityValue');
+            qualityInput.addEventListener('input', (e) => {
+                qualityValue.textContent = e.target.value;
+            });
+
+            // 长宽比锁定逻辑
+            const widthInput = document.getElementById('imgWidth');
+            const heightInput = document.getElementById('imgHeight');
+            const lockBtn = document.getElementById('aspectLock');
+            let aspectRatio = 0;
+
+            const updateRatio = () => {
+                if (widthInput.value && heightInput.value) {
+                    aspectRatio = widthInput.value / heightInput.value;
+                }
+            };
+
+            widthInput.addEventListener('input', () => {
+                if (lockBtn.classList.contains('active') && aspectRatio > 0) {
+                    heightInput.value = Math.round(widthInput.value / aspectRatio);
+                } else {
+                    updateRatio();
+                }
+            });
+
+            heightInput.addEventListener('input', () => {
+                if (lockBtn.classList.contains('active') && aspectRatio > 0) {
+                    widthInput.value = Math.round(heightInput.value * aspectRatio);
+                } else {
+                    updateRatio();
+                }
+            });
+
+            lockBtn.addEventListener('click', () => {
+                lockBtn.classList.toggle('active');
+                if (lockBtn.classList.contains('active')) {
+                    updateRatio();
+                }
+            });
+        }
 
         const pendingPath = document.body.dataset.pendingFilePath;
         const pendingName = document.body.dataset.pendingFileName;
@@ -283,12 +383,27 @@ document.addEventListener('DOMContentLoaded', () => {
             const result = await window.electronAPI.selectFile(category);
             if (result.filePath) {
                 // 检查是否需要自动切换分类
-                const switched = handleFileSelection(result, category, sidebarButtons);
+                const switched = await handleFileSelection(result, category, sidebarButtons);
                 if (!switched) {
                     // 如果没有切换分类，直接设置文件
                     selectedFilePath = result.filePath;
                     selectedFileName.textContent = `✓ 已选择: ${result.fileName}`;
                     dropZone.classList.remove('dragover');
+                    
+                    // 如果是图片分类，获取并设置原始尺寸
+                    if (category === 'images') {
+                        const dims = await window.electronAPI.getImageDimensions(result.filePath);
+                        if (dims) {
+                            const wInput = document.getElementById('imgWidth');
+                            const hInput = document.getElementById('imgHeight');
+                            if (wInput && hInput) {
+                                wInput.value = dims.width;
+                                hInput.value = dims.height;
+                                // 触发 input 事件以更新锁定比例
+                                wInput.dispatchEvent(new Event('input'));
+                            }
+                        }
+                    }
                 } else {
                     // 如果切换了分类，在事件处理中已设置文件
                     selectedFilePath = result.filePath;
@@ -366,17 +481,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
             const targetFormat = targetFormatSelect.value;
+            let options = {};
+
+            // 收集图片高级选项
+            if (category === 'images') {
+                const width = document.getElementById('imgWidth').value;
+                const height = document.getElementById('imgHeight').value;
+                const quality = document.getElementById('imgQuality').value;
+                
+                if (width) options.width = parseInt(width, 10);
+                if (height) options.height = parseInt(height, 10);
+                options.quality = parseInt(quality, 10);
+            }
 
             // 收集 ICO 选项（单选）
-            let options = {};
             if (category === 'images' && targetFormat.toLowerCase() === 'ico') {
                 const selected = icoOptions.querySelector('input[name="icoSize"]:checked');
                 if (selected) {
-                    if (selected.value === 'multi') {
-                        // 不设置 options.icoSizes 表示使用默认多尺寸集合
-                    } else {
-                        options.icoSizes = [parseInt(selected.value, 10)];
-                    }
+                    options.icoSizes = [parseInt(selected.value, 10)];
                 }
             }
 
@@ -399,12 +521,17 @@ document.addEventListener('DOMContentLoaded', () => {
             convertFile(selectedFilePath, category, targetFormat, options);
         });
 
-        // 显示/隐藏 ICO 分辨率选项
+        // 显示/隐藏 ICO 分辨率选项及高级设置
         targetFormatSelect.addEventListener('change', (e) => {
-            if (category === 'images' && e.target.value.toLowerCase() === 'ico') {
-                icoOptions.style.display = 'block';
-            } else {
-                icoOptions.style.display = 'none';
+            const isIco = e.target.value.toLowerCase() === 'ico';
+            if (category === 'images') {
+                if (isIco) {
+                    icoOptions.style.display = 'block';
+                    imageAdvanced.style.display = 'none';
+                } else {
+                    icoOptions.style.display = 'none';
+                    imageAdvanced.style.display = 'block';
+                }
             }
         });
     }
