@@ -48,7 +48,40 @@ function detectFileCategory(fileName) {
     return extensionToCategoryMap[extension] || null;
 }
 
-// 处理文件选择并自动切换分类
+// 更新文件详情预览
+    async function updateFilePreview(filePath) {
+        const previewContainer = document.getElementById('filePreviewInfo');
+        if (!previewContainer || !filePath) return;
+
+        const info = await window.electronAPI.getFileInfo(filePath);
+        if (info) {
+            let html = `
+                <div class="meta-item"><i class="bi bi-hdd"></i><span class="meta-label">大小:</span> ${info.size}</div>
+                <div class="meta-item"><i class="bi bi-file-earmark"></i><span class="meta-label">格式:</span> ${info.ext.toUpperCase()}</div>
+            `;
+            if (info.res) html += `<div class="meta-item"><i class="bi bi-aspect-ratio"></i><span class="meta-label">分辨率:</span> ${info.res}</div>`;
+            if (info.duration) html += `<div class="meta-item"><i class="bi bi-clock"></i><span class="meta-label">时长:</span> ${info.duration}</div>`;
+            if (info.bitrate) html += `<div class="meta-item"><i class="bi bi-speedometer2"></i><span class="meta-label">码率:</span> ${info.bitrate}</div>`;
+            
+            previewContainer.innerHTML = html;
+            previewContainer.classList.add('show');
+
+            // 绑定右键菜单
+            previewContainer.oncontextmenu = (e) => {
+                e.preventDefault();
+                window.electronAPI.showContextMenu(filePath);
+            };
+            const fileNameSpan = document.getElementById('selectedFileName');
+            if (fileNameSpan) {
+                fileNameSpan.oncontextmenu = (e) => {
+                    e.preventDefault();
+                    window.electronAPI.showContextMenu(filePath);
+                };
+            }
+        }
+    }
+
+    // 处理文件选择并自动切换分类
     async function handleFileSelection(result, currentCategory, sidebarButtons) {
         if (!result.filePath) return false;
         
@@ -75,6 +108,9 @@ function detectFileCategory(fileName) {
                         if (dropZone && selectedFileName) {
                             selectedFileName.textContent = `✓ 已选择: ${result.fileName}`;
                             dropZone.classList.remove('dragover');
+                            
+                            // 更新预览详情
+                            updateFilePreview(result.filePath);
                             
                             // 如果是图片分类，获取并设置原始尺寸
                             if (detectedCategory === 'images') {
@@ -242,6 +278,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             <div class="drop-zone-icon"><i class="bi bi-file-arrow-down"></i></div>
                             <div class="drop-zone-text">点击选择或拖拽文件到此</div>
                             <span id="selectedFileName" class="selected-file-name"></span>
+                            <div id="filePreviewInfo" class="file-preview-info"></div>
                         </div>
                     </div>
                 </div>
@@ -444,6 +481,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     selectedFileName.textContent = `✓ 已选择: ${result.fileName}`;
                     dropZone.classList.remove('dragover');
                     
+                    // 更新预览详情
+                    updateFilePreview(result.filePath);
+
                     // 如果是图片分类，获取并设置原始尺寸
                     if (category === 'images') {
                         const dims = await window.electronAPI.getImageDimensions(result.filePath);

@@ -1,11 +1,12 @@
 // main.js
-const { app, BrowserWindow, ipcMain, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, shell, Menu } = require('electron');
 const fsp = require('fs').promises;
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const { nativeImage } = require('electron');
 const { Worker } = require('worker_threads');
+const { execSync } = require('child_process');
 
 async function ensurePngIcon() {
     try {
@@ -234,4 +235,47 @@ ipcMain.handle('get-image-dimensions', async (event, filePath) => {
     } catch (e) {
         return null;
     }
+});
+
+ipcMain.handle('get-file-info', async (event, filePath) => {
+    try {
+        const stats = await fsp.stat(filePath);
+        const size = (stats.size / (1024 * 1024)).toFixed(2) + ' MB';
+        const ext = path.extname(filePath).toLowerCase().substring(1);
+        
+        let info = { size, ext };
+        
+        // 如果是多媒体文件，尝试获取更详细信息
+        if (['mp4', 'mkv', 'avi', 'mp3', 'wav', 'm4a'].includes(ext)) {
+            try {
+                const ffprobeRaw = execSync(`ffprobe -v error -show_entries format=duration:stream=width,height,bit_rate -of json "${filePath}"`, { encoding: 'utf8' });
+                const ffData = JSON.parse(ffprobeRaw);
+                if (ffData.format) info.duration = Math.round(ffData.format.duration) + 's';
+                if (ffData.streams && ffData.streams[0]) {
+                    if (ffData.streams[0].width) info.res = `${ffData.streams[0].width}x${ffData.streams[0].height}`;
+                    if (ffData.streams[0].bit_rate) info.bitrate = Math.round(ffData.streams[0].bit_rate / 1000) + 'kbps';
+                }
+            } catch (e) {
+                console.log('ffprobe info failed', e.message);
+            }
+        }
+        
+        return info;
+    } catch (e) {
+        return null;
+    }
+});
+
+ipcMain.on('show-context-menu', (event, filePath) => {
+    const template = [
+        { label: '在文件夹中显示', click: () => shell.showItemInFolder(filePath) },
+        { label: '使用默认应用打开', click: () => shell.openPath(filePath) },
+        { type: 'separator' },
+        { label: '复制完整路径', click: () => {
+            const { clipboard } = require('electron');
+            clipboard.writeText(filePath);
+        }}
+    ];
+    const menu = Menu.buildFromTemplate(template);
+    menu.popup(BrowserWindow.fromWebContents(event.sender));
 });
