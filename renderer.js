@@ -17,6 +17,52 @@ function showToast(message, type = 'info', duration = 4000) {
     }, duration);
 }
 
+// 自定义确认对话框函数
+function showConfirm(title, message, confirmText = '确定', cancelText = '取消') {
+    return new Promise((resolve) => {
+        const overlay = document.createElement('div');
+        overlay.className = 'modal-overlay';
+        
+        overlay.innerHTML = `
+            <div class="modal-container">
+                <div class="modal-title">
+                    <i class="bi bi-question-circle-fill"></i>
+                    <span>${title}</span>
+                </div>
+                <div class="modal-body">
+                    ${message.replace(/\n/g, '<br>')}
+                </div>
+                <div class="modal-footer">
+                    <button class="modal-btn modal-btn-secondary" id="modalCancel">${cancelText}</button>
+                    <button class="modal-btn modal-btn-primary" id="modalConfirm">${confirmText}</button>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(overlay);
+        
+        // 强制重绘以触发动画
+        overlay.offsetHeight;
+        overlay.classList.add('show');
+        
+        const cleanup = (result) => {
+            overlay.classList.remove('show');
+            setTimeout(() => {
+                overlay.remove();
+                resolve(result);
+            }, 300);
+        };
+        
+        overlay.querySelector('#modalConfirm').onclick = () => cleanup(true);
+        overlay.querySelector('#modalCancel').onclick = () => cleanup(false);
+        
+        // 点击遮罩层也可以取消
+        overlay.onclick = (e) => {
+            if (e.target === overlay) cleanup(false);
+        };
+    });
+}
+
 // 定义各分类的格式列表
 const formatMap = {
     'images': ['PNG', 'JPG', 'JPEG', 'GIF', 'BMP', 'WEBP', 'SVG', 'ICO'],
@@ -157,8 +203,8 @@ function isCompatibleWithCategory(fileName, category) {
         
         const detectedCategory = detectFileCategory(result.fileName);
         
-        // 如果检测到的分类与当前分类不同，且不兼容当前分类，则自动切换
-        if (detectedCategory && !isCompatibleWithCategory(result.fileName, currentCategory)) {
+        // 提取执行切换分类的公共逻辑
+        const executeSwitch = async () => {
             document.body.dataset.pendingFilePath = result.filePath;
             document.body.dataset.pendingFileName = result.fileName;
             // 触发对应分类按钮的点击事件
@@ -204,7 +250,27 @@ function isCompatibleWithCategory(fileName, category) {
                 }, 200);
                 return true; // 返回true表示已切换分类
             }
+            return false;
+        };
+
+        // 1. 如果检测到的分类与当前分类不同，且不兼容当前分类，则自动切换
+        if (detectedCategory && !isCompatibleWithCategory(result.fileName, currentCategory)) {
+            return await executeSwitch();
+        } 
+        
+        // 2. 特殊处理：视频文件添加到音频分类时，询问用户是否切换
+        if (detectedCategory === 'videos' && currentCategory === 'audio') {
+            const shouldSwitch = await showConfirm(
+                '文件分类识别',
+                `检测到您添加的是视频文件 "${result.fileName}"。\n\n您是想将其转换为其他视频格式，还是提取其中的音频？`,
+                '切换到视频分类',
+                '留在音频分类提取'
+            );
+            if (shouldSwitch) {
+                return await executeSwitch();
+            }
         }
+        
         return false; // 返回false表示没有切换分类
     }
 
@@ -266,7 +332,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const result = await window.electronAPI.selectFile('welcome');
         if (result.filePath) {
             // 检查是否需要自动切换分类
-            const switched = handleFileSelection(result, "quickstart", sidebarButtons);
+            const switched = await handleFileSelection(result, "quickstart", sidebarButtons);
             if (!switched) {
                 // 如果没有切换分类，直接设置文件
                 selectedFilePath = result.filePath;
@@ -319,7 +385,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     
                     // 3. 使用返回的文件路径进行后续操作
                     welcomeSelectedFileName.textContent = `✓ 已选择: ${result.fileName}`;
-                    const switched = handleFileSelection(result, currentCategory, sidebarButtons);
+                    const switched = await handleFileSelection(result, currentCategory, sidebarButtons);
                     if (!switched) {
                         showToast('无法自动识别分类，请从侧边栏选择合适的分类。', 'info', 4000);
                     }
@@ -631,7 +697,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     // 更新目标格式列表
                     updateTargetFormats(currentCategory, result.filePath);
                     
-                    const switched = handleFileSelection(result, currentCategory, sidebarButtons);
+                    const switched = await handleFileSelection(result, currentCategory, sidebarButtons);
                     if (!switched) {
                         showToast('无法自动识别分类，请从侧边栏选择合适的分类。', 'info', 4000);
                     }
