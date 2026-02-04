@@ -1,5 +1,62 @@
 // renderer.js - 渲染进程中的DOM操作和事件处理
 
+// 设置管理
+const Settings = {
+    data: {},
+    async init() {
+        // 尝试从本地文件加载设置
+        const savedSettings = await window.electronAPI.loadSettings();
+        if (savedSettings) {
+            this.data = savedSettings;
+        } else {
+            // 如果文件不存在，从 localStorage 迁移或使用默认值
+            this.data = {
+                theme: localStorage.getItem('setting_theme') ? JSON.parse(localStorage.getItem('setting_theme')) : 'auto',
+                animation: localStorage.getItem('setting_animation') ? JSON.parse(localStorage.getItem('setting_animation')) : true,
+                openFolder: localStorage.getItem('setting_openFolder') ? JSON.parse(localStorage.getItem('setting_openFolder')) : false,
+                openFile: localStorage.getItem('setting_openFile') ? JSON.parse(localStorage.getItem('setting_openFile')) : false
+            };
+            // 立即保存一份到文件
+            this.saveToFile();
+        }
+        
+        // 应用初始设置
+        Object.keys(this.data).forEach(key => {
+            this.apply(key, this.data[key]);
+        });
+    },
+    get(key, defaultValue) {
+        return this.data[key] !== undefined ? this.data[key] : defaultValue;
+    },
+    async set(key, value) {
+        this.data[key] = value;
+        // 同时保存到 localStorage 做备份
+        localStorage.setItem(`setting_${key}`, JSON.stringify(value));
+        this.apply(key, value);
+        await this.saveToFile();
+    },
+    async saveToFile() {
+        await window.electronAPI.saveSettings(this.data);
+    },
+    apply(key, value) {
+        switch (key) {
+            case 'theme':
+                if (value === 'auto') {
+                    document.documentElement.removeAttribute('data-theme');
+                } else {
+                    document.documentElement.setAttribute('data-theme', value);
+                }
+                break;
+            case 'animation':
+                document.body.classList.toggle('no-animations', !value);
+                break;
+        }
+    }
+};
+
+// 初始化设置
+Settings.init();
+
 // Toast 通知函数
 function showToast(message, type = 'info', duration = 4000) {
     const container = document.getElementById('toastContainer');
@@ -76,7 +133,8 @@ const categoryNameMap = {
     'images': '图片',
     'videos': '视频',
     'audio': '音频',
-    'documents': '文档'
+    'documents': '文档',
+    'settings': '设置'
 };
 
 // 文档格式兼容性映射表（定义哪些格式可以互转）
@@ -399,8 +457,116 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    function loadSettings() {
+        const currentTheme = Settings.get('theme', 'auto');
+        const currentAnimation = Settings.get('animation', true);
+        const currentOpenFolder = Settings.get('openFolder', false);
+        const currentOpenFile = Settings.get('openFile', false);
+
+        mainContent.innerHTML = `
+            <div class="settings-container">
+                <h1>设置</h1>
+                <p>管理您的个性化偏好与转换配置</p>
+                
+                <div class="settings-section">
+                    <h3><i class="bi bi-palette"></i> 个性化设置</h3>
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <span class="setting-label">外观主题</span>
+                            <span class="setting-description">选择您喜欢的主题模式</span>
+                        </div>
+                        <div class="setting-control">
+                            <select id="themeSelect">
+                                <option value="auto" ${currentTheme === 'auto' ? 'selected' : ''}>跟随系统</option>
+                                <option value="light" ${currentTheme === 'light' ? 'selected' : ''}>浅色模式</option>
+                                <option value="dark" ${currentTheme === 'dark' ? 'selected' : ''}>深色模式</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <span class="setting-label">界面动画</span>
+                            <span class="setting-description">开启或关闭平滑的过渡效果</span>
+                        </div>
+                        <div class="setting-control">
+                            <input type="checkbox" id="animationToggle" ${currentAnimation ? 'checked' : ''}>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="settings-section">
+                    <h3><i class="bi bi-sliders"></i> 常规设置</h3>
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <span class="setting-label">转换成功后打开文件夹</span>
+                            <span class="setting-description">转换完成后自动在资源管理器中定位文件</span>
+                        </div>
+                        <div class="setting-control">
+                            <input type="checkbox" id="openFolderToggle" ${currentOpenFolder ? 'checked' : ''}>
+                        </div>
+                    </div>
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <span class="setting-label">转换成功后打开文件</span>
+                            <span class="setting-description">转换完成后直接使用默认程序打开文件</span>
+                        </div>
+                        <div class="setting-control">
+                            <input type="checkbox" id="openFileToggle" ${currentOpenFile ? 'checked' : ''}>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="settings-section">
+                    <h3><i class="bi bi-info-circle"></i> 关于</h3>
+                    <div class="about-info">
+                        <div class="about-logo">🚀</div>
+                        <div class="version-tag">Version 1.2.0</div>
+                        <div class="setting-label">文件格式转换器</div>
+                        <div class="setting-description" style="margin-top:12px;">
+                            一个基于 Electron 和 FFmpeg 的轻量级开源转换工具。<br>
+                            旨在提供极致简洁、高效的多媒体处理体验。
+                        </div>
+                        <div style="margin-top:20px;">
+                            <span class="action-link" style="justify-content:center;"><i class="bi bi-github"></i> 检查更新</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // 绑定设置交互
+        const themeSelect = document.getElementById('themeSelect');
+        const animationToggle = document.getElementById('animationToggle');
+        const openFolderToggle = document.getElementById('openFolderToggle');
+        const openFileToggle = document.getElementById('openFileToggle');
+
+        themeSelect.addEventListener('change', (e) => {
+            Settings.set('theme', e.target.value);
+            showToast(`主题已切换`, 'success');
+        });
+
+        animationToggle.addEventListener('change', (e) => {
+            Settings.set('animation', e.target.checked);
+            showToast(`界面动画已${e.target.checked ? '开启' : '关闭'}`, 'success');
+        });
+
+        openFolderToggle.addEventListener('change', (e) => {
+            Settings.set('openFolder', e.target.checked);
+            showToast(`设置已保存`, 'success');
+        });
+
+        openFileToggle.addEventListener('change', (e) => {
+            Settings.set('openFile', e.target.checked);
+            showToast(`设置已保存`, 'success');
+        });
+    }
+
     // 加载内容到主容器
     function loadContent(category) {
+        if (category === 'settings') {
+            loadSettings();
+            return;
+        }
         //selectedFilePath = null; // 重置文件选择
         const categoryName = categoryNameMap[category] || category;
         const formats = formatMap[category] || [];
@@ -846,6 +1012,16 @@ document.addEventListener('DOMContentLoaded', () => {
                         msg += `\n📦 包含尺寸: ${sizes}`;
                     }
                     showToast(msg, 'success', 5000);
+
+                    // 如果开启了自动打开文件夹
+                    if (Settings.get('openFolder', false)) {
+                        window.electronAPI.showItemInFolder(result.outputPath);
+                    }
+
+                    // 如果开启了自动打开文件
+                    if (Settings.get('openFile', false)) {
+                        window.electronAPI.openPath(result.outputPath);
+                    }
 
                     // 获取转换后的文件详情
                     const fileInfo = await window.electronAPI.getFileInfo(result.outputPath);

@@ -8,6 +8,8 @@ const { nativeImage } = require('electron');
 const { Worker } = require('worker_threads');
 const { execSync } = require('child_process');
 
+const settingsPath = path.join(app.getPath('userData'), 'settings.json');
+
 // 封装获取二进制文件路径的函数
 function getBinaryPath(type) {
     const isWin = process.platform === 'win32';
@@ -319,4 +321,27 @@ ipcMain.on('open-path', (event, filePath) => {
 
 ipcMain.on('show-item-in-folder', (event, filePath) => {
     shell.showItemInFolder(filePath);
+});
+
+// 设置保存与加载
+ipcMain.handle('save-settings', async (event, settings) => {
+    try {
+        await fsp.writeFile(settingsPath, JSON.stringify(settings, null, 2));
+        return { success: true };
+    } catch (e) {
+        return { success: false, message: e.message };
+    }
+});
+
+ipcMain.handle('load-settings', async () => {
+    try {
+        if (fs.existsSync(settingsPath)) {
+            const data = await fsp.readFile(settingsPath, 'utf8');
+            return JSON.parse(data);
+        }
+        return null;
+    } catch (e) {
+        console.error('加载设置失败:', e);
+        return null;
+    }
 });
