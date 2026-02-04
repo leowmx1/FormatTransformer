@@ -634,7 +634,7 @@ document.addEventListener('DOMContentLoaded', () => {
         targetFormatSelect.addEventListener('change', (e) => {
             const format = e.target.value.toLowerCase();
             const isIco = format === 'ico';
-            const supportsImgQuality = ['jpg', 'jpeg', 'webp'].includes(format);
+            const supportsImgQuality = ['jpg', 'jpeg'].includes(format);
             const supportsAudioBitrate = ['mp3', 'aac', 'm4a', 'ogg', 'wma'].includes(format);
             
             if (category === 'images') {
