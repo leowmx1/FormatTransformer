@@ -724,11 +724,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
                         // 绑定快捷操作
                         document.getElementById('openFolderAction').onclick = () => {
-                             window.electronAPI.showContextMenu(result.outputPath);
+                             window.electronAPI.showItemInFolder(result.outputPath);
                         };
                         document.getElementById('openFileAction').onclick = () => {
-                             // 借用右键菜单展示更多选项或直接打开
-                             window.electronAPI.showContextMenu(result.outputPath);
+                             window.electronAPI.openPath(result.outputPath);
                         };
                     }
                 } else {
