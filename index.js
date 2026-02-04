@@ -8,6 +8,32 @@ const { nativeImage } = require('electron');
 const { Worker } = require('worker_threads');
 const { execSync } = require('child_process');
 
+// 封装获取二进制文件路径的函数
+function getBinaryPath(type) {
+    const isWin = process.platform === 'win32';
+    const exeName = type + (isWin ? '.exe' : '');
+    
+    // 1. 优先检查项目根目录下的 bin 文件夹
+    const localBinPath = path.join(__dirname, 'bin', exeName);
+    if (fs.existsSync(localBinPath)) return localBinPath;
+
+    // 2. 尝试从 node_modules 获取
+    try {
+        if (type === 'ffmpeg') {
+            const staticPath = require('ffmpeg-static');
+            if (staticPath && fs.existsSync(staticPath)) return staticPath;
+        } else if (type === 'ffprobe') {
+            const staticPath = require('ffprobe-static').path;
+            if (staticPath && fs.existsSync(staticPath)) return staticPath;
+        }
+    } catch (e) {}
+
+    return null;
+}
+
+const ffmpegPath = getBinaryPath('ffmpeg');
+const ffprobePath = getBinaryPath('ffprobe');
+
 async function ensurePngIcon() {
     try {
         const svgPath = path.join(__dirname, 'assets', 'app-icon.svg');
@@ -188,7 +214,14 @@ ipcMain.handle('convert-file', async (event, { filePath, targetFormat, category,
             });
 
             // 启动任务
-            worker.postMessage({ filePath, outputPath, targetFormat, category, options });
+            worker.postMessage({ 
+                filePath, 
+                outputPath, 
+                targetFormat, 
+                category, 
+                options,
+                ffmpegPath // 将解析到的 ffmpeg 路径传递给 worker
+            });
         });
 
     } catch (error) {
@@ -246,9 +279,9 @@ ipcMain.handle('get-file-info', async (event, filePath) => {
         let info = { size, ext };
         
         // 如果是多媒体文件，尝试获取更详细信息
-        if (['mp4', 'mkv', 'avi', 'mp3', 'wav', 'm4a'].includes(ext)) {
+        if (['mp4', 'mkv', 'avi', 'mp3', 'wav', 'm4a'].includes(ext) && ffprobePath) {
             try {
-                const ffprobeRaw = execSync(`ffprobe -v error -show_entries format=duration:stream=width,height,bit_rate -of json "${filePath}"`, { encoding: 'utf8' });
+                const ffprobeRaw = execSync(`"${ffprobePath}" -v error -show_entries format=duration:stream=width,height,bit_rate -of json "${filePath}"`, { encoding: 'utf8' });
                 const ffData = JSON.parse(ffprobeRaw);
                 if (ffData.format) info.duration = Math.round(ffData.format.duration) + 's';
                 if (ffData.streams && ffData.streams[0]) {
@@ -256,7 +289,7 @@ ipcMain.handle('get-file-info', async (event, filePath) => {
                     if (ffData.streams[0].bit_rate) info.bitrate = Math.round(ffData.streams[0].bit_rate / 1000) + 'kbps';
                 }
             } catch (e) {
-                console.log('ffprobe info failed', e.message);
+                // 如果 ffprobe 不存在或执行失败，静默失败，只返回基础 stats 信息
             }
         }
         
@@ -278,4 +311,12 @@ ipcMain.on('show-context-menu', (event, filePath) => {
     ];
     const menu = Menu.buildFromTemplate(template);
     menu.popup(BrowserWindow.fromWebContents(event.sender));
+});
+
+ipcMain.on('open-path', (event, filePath) => {
+    shell.openPath(filePath);
+});
+
+ipcMain.on('show-item-in-folder', (event, filePath) => {
+    shell.showItemInFolder(filePath);
 });

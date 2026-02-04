@@ -311,8 +311,58 @@ body {
     font-weight: 500;
 }
 
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(-5px); }
+.conversion-success-card {
+    margin-top: 24px;
+    padding: 20px;
+    background-color: #ecfdf5; /* Success light green */
+    border: 1px solid #a7f3d0;
+    border-radius: var(--radius-lg);
+    animation: slideUp 0.4s ease;
+}
+
+.success-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--success-color);
+    font-weight: 600;
+    margin-bottom: 15px;
+}
+
+.success-header i {
+    font-size: 20px;
+}
+
+.result-info {
+    background-color: rgba(255, 255, 255, 0.6);
+    padding: 12px;
+    border-radius: var(--radius-md);
+    margin-bottom: 15px;
+}
+
+.result-actions {
+    display: flex;
+    gap: 15px;
+}
+
+.action-link {
+    font-size: 13px;
+    color: var(--primary-color);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.action-link:hover {
+    color: var(--primary-hover);
+    text-decoration: underline;
+}
+
+@keyframes slideUp {
+    from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }
 }
 

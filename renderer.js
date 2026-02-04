@@ -388,6 +388,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <div id="progressBar" class="progress-bar-fill"></div>
                     </div>
                 </div>
+                <div id="conversionResult" style="display: none;"></div>
             </div>
         `;
         
@@ -667,7 +668,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // 调用主进程的转换函数
         window.electronAPI.convertFile(filePath, targetFormat, category, options)
-            .then(result => {
+            .then(async result => {
                 // 移除正在转换的 toast
                 const toasts = document.querySelectorAll('.toast.info');
                 toasts.forEach(t => t.remove());
@@ -689,6 +690,47 @@ document.addEventListener('DOMContentLoaded', () => {
                         msg += `\n📦 包含尺寸: ${sizes}`;
                     }
                     showToast(msg, 'success', 5000);
+
+                    // 获取转换后的文件详情
+                    const fileInfo = await window.electronAPI.getFileInfo(result.outputPath);
+                    const resultContainer = document.getElementById('conversionResult');
+                    
+                    if (resultContainer && fileInfo) {
+                        resultContainer.innerHTML = `
+                            <div class="conversion-success-card">
+                                <div class="success-header">
+                                    <i class="bi bi-check-circle-fill"></i>
+                                    <span>转换完成</span>
+                                </div>
+                                <div class="result-info" id="resultFileInfo">
+                                    <div class="meta-item"><i class="bi bi-file-earmark-check"></i><span class="meta-label">文件名:</span> ${result.outputPath.split(/[\\/]/).pop()}</div>
+                                    <div class="meta-item"><i class="bi bi-hdd"></i><span class="meta-label">大小:</span> ${fileInfo.size}</div>
+                                    ${fileInfo.res ? `<div class="meta-item"><i class="bi bi-aspect-ratio"></i><span class="meta-label">分辨率:</span> ${fileInfo.res}</div>` : ''}
+                                    ${fileInfo.duration ? `<div class="meta-item"><i class="bi bi-clock"></i><span class="meta-label">时长:</span> ${fileInfo.duration}</div>` : ''}
+                                </div>
+                                <div class="result-actions">
+                                    <span class="action-link" id="openFolderAction"><i class="bi bi-folder2-open"></i>打开所在文件夹</span>
+                                    <span class="action-link" id="openFileAction"><i class="bi bi-box-arrow-up-right"></i>打开文件</span>
+                                </div>
+                            </div>
+                        `;
+                        resultContainer.style.display = 'block';
+
+                        // 绑定右键菜单
+                        document.getElementById('resultFileInfo').oncontextmenu = (e) => {
+                            e.preventDefault();
+                            window.electronAPI.showContextMenu(result.outputPath);
+                        };
+
+                        // 绑定快捷操作
+                        document.getElementById('openFolderAction').onclick = () => {
+                             window.electronAPI.showContextMenu(result.outputPath);
+                        };
+                        document.getElementById('openFileAction').onclick = () => {
+                             // 借用右键菜单展示更多选项或直接打开
+                             window.electronAPI.showContextMenu(result.outputPath);
+                        };
+                    }
                 } else {
                     showToast(`转换失败: ${result.message}`, 'error', 5000);
                 }

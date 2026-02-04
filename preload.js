@@ -15,5 +15,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     getImageDimensions: (filePath) => ipcRenderer.invoke('get-image-dimensions', filePath),
     getFileInfo: (filePath) => ipcRenderer.invoke('get-file-info', filePath),
     showContextMenu: (filePath) => ipcRenderer.send('show-context-menu', filePath),
+    openPath: (filePath) => ipcRenderer.send('open-path', filePath),
+    showItemInFolder: (filePath) => ipcRenderer.send('show-item-in-folder', filePath),
     onProgress: (callback) => ipcRenderer.on('conversion-progress', (_event, value) => callback(value)),
 });
