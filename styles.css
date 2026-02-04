@@ -77,8 +77,27 @@ body {
     font-size: 15px;
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     text-align: left;
+    position: relative;
+    overflow: hidden;
+}
+
+.sidebar-button::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 4px;
+    height: 0;
+    background-color: var(--primary-color);
+    transition: height 0.3s ease;
+    border-radius: 0 4px 4px 0;
+}
+
+.sidebar-button.active::after {
+    height: 60%;
 }
 
 .sidebar-button i.bi {
@@ -114,6 +133,12 @@ body {
     padding: 48px;
     overflow-y: auto;
     background-color: var(--bg-color);
+    animation: fadeInContent 0.5s ease-out;
+}
+
+@keyframes fadeInContent {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 .main-content h1 {
@@ -146,7 +171,8 @@ body {
     border-radius: var(--radius-lg);
     border: 1px solid rgba(255,255,255,0.5);
     box-shadow: var(--shadow-md);
-    transition: transform 0.2s, box-shadow 0.2s;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    animation: slideUp 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .operation-container:hover {
@@ -477,14 +503,17 @@ body {
 }
 
 .advanced-content {
-    padding: 20px;
-    display: none;
+    padding: 0 20px;
+    max-height: 0;
+    overflow: hidden;
+    display: block; /* 改为 block 以配合 max-height 动画 */
     background-color: var(--surface-color);
-    border-top: 1px solid var(--border-color);
+    transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), padding 0.4s ease;
 }
 
 .advanced-content.show {
-    display: block;
+    padding: 20px;
+    max-height: 500px; /* 足够容纳内容的高度 */
 }
 
 .settings-grid {
@@ -594,7 +623,30 @@ body {
     height: 100%;
     background-color: var(--success-color);
     width: 0%;
-    transition: width 0.3s ease;
+    transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     border-radius: 6px;
     box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    position: relative;
+    overflow: hidden;
+}
+
+.progress-bar-fill::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.3),
+        transparent
+    );
+    animation: progressShine 1.5s infinite;
+}
+
+@keyframes progressShine {
+    from { transform: translateX(-100%); }
+    to { transform: translateX(100%); }
 }
