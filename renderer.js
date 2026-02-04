@@ -63,11 +63,17 @@ function updateTargetFormats(category, sourceFilePath) {
     if (!targetSelect) return;
 
     const sourceExt = sourceFilePath ? sourceFilePath.split('.').pop().toLowerCase() : null;
+    const sourceCategory = detectFileCategory(sourceFilePath);
     let availableFormats = formatMap[category] || [];
 
     // 只有文档类需要根据源文件进行筛选
     if (category === 'documents' && sourceExt && formatCompatibilityMap[sourceExt]) {
         availableFormats = formatCompatibilityMap[sourceExt];
+    }
+    
+    // 视频转音频的特殊处理：如果源是视频但当前在音频分类，显示所有音频格式
+    if (category === 'audio' && sourceCategory === 'videos') {
+        availableFormats = formatMap['audio'];
     }
 
     // 过滤掉与源文件相同的格式
@@ -99,6 +105,17 @@ function detectFileCategory(fileName) {
     if (!fileName) return null;
     const extension = fileName.split('.').pop().toLowerCase();
     return extensionToCategoryMap[extension] || null;
+}
+
+// 检查文件是否可以作为当前分类的输入
+function isCompatibleWithCategory(fileName, category) {
+    const detected = detectFileCategory(fileName);
+    if (detected === category) return true;
+    
+    // 特殊逻辑：视频文件可以作为音频分类的输入（用于提取音频）
+    if (category === 'audio' && detected === 'videos') return true;
+    
+    return false;
 }
 
 // 更新文件详情预览
@@ -140,8 +157,8 @@ function detectFileCategory(fileName) {
         
         const detectedCategory = detectFileCategory(result.fileName);
         
-        // 如果检测到的分类与当前分类不同，则自动切换
-        if (detectedCategory) {
+        // 如果检测到的分类与当前分类不同，且不兼容当前分类，则自动切换
+        if (detectedCategory && !isCompatibleWithCategory(result.fileName, currentCategory)) {
             document.body.dataset.pendingFilePath = result.filePath;
             document.body.dataset.pendingFileName = result.fileName;
             // 触发对应分类按钮的点击事件

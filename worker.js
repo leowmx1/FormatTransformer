@@ -172,6 +172,13 @@ async function convertAudio(inputPath, outputPath, targetFormat, options, ffmpeg
     return new Promise((resolve, reject) => {
         const args = ['-i', inputPath, '-y'];
 
+        // 如果输入是视频，禁用视频流以提取音频
+        const inputExt = path.extname(inputPath).toLowerCase().replace('.', '');
+        const videoExtensions = ['mp4', 'avi', 'mkv', 'mov', 'flv', 'webm', 'wmv'];
+        if (videoExtensions.includes(inputExt)) {
+            args.push('-vn');
+        }
+
         // 音频码率
         if (options.audioBitrate) {
             args.push('-b:a', options.audioBitrate);
