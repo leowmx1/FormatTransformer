@@ -236,40 +236,81 @@ function runFFmpeg(ffmpegPath, args, resolve, reject) {
 
 async function convertDocument(inputPath, outputPath, targetFormat) {
     const format = targetFormat.toLowerCase();
-    const ext = '.' + format.replace(/^\./, '');
+    const outDir = path.dirname(outputPath);
+    const inputExt = path.extname(inputPath).toLowerCase();
+    const inputBaseName = path.basename(inputPath, inputExt);
 
     parentPort.postMessage({ type: 'progress', value: 30 });
 
-    // Try LibreOffice CLI first
+    // Try LibreOffice CLI first (using system PATH)
     try {
-        execSync(`soffice --headless --convert-to ${format} --outdir "${path.dirname(outputPath)}" "${inputPath}"`, { stdio: 'ignore' });
+        // 在 Windows 上，即使在 PATH 中，直接调用 soffice 有时也需要加上 .exe 或者通过 cmd 调用
+        // 但根据用户要求使用环境变量里的，直接调用 soffice 通常是最好的
+        const cmd = 'soffice';
+        
+        // 执行转换命令
+        // --headless: 无界面模式
+        // --convert-to: 目标格式
+        // --outdir: 输出目录
+        execSync(`"${cmd}" --headless --convert-to ${format} --outdir "${outDir}" "${inputPath}"`, { 
+            stdio: 'ignore',
+            windowsHide: true 
+        });
         
         parentPort.postMessage({ type: 'progress', value: 80 });
 
-        const generatedName = path.basename(inputPath, path.extname(inputPath)) + '.' + format;
-        const tempOutputPath = path.join(path.dirname(outputPath), generatedName);
-        if (fs.existsSync(tempOutputPath)) {
-            if (tempOutputPath !== outputPath) fs.renameSync(tempOutputPath, outputPath);
+        // LibreOffice 默认生成的名称是 "原文件名.目标格式"
+        // 注意：LibreOffice 可能会微调扩展名（如 jpeg -> jpg），或者在某些情况下保持原扩展名（如果不转换）
+        const generatedFileName = `${inputBaseName}.${format}`;
+        let generatedPath = path.join(outDir, generatedFileName);
+
+        // 如果找不到精确匹配的文件，尝试在输出目录搜索以原文件名开头且扩展名为目标格式的文件
+        if (!fs.existsSync(generatedPath)) {
+            const files = fs.readdirSync(outDir);
+            const matchedFile = files.find(f => {
+                const fExt = path.extname(f).toLowerCase().replace('.', '');
+                return f.startsWith(inputBaseName) && fExt === format;
+            });
+            if (matchedFile) {
+                generatedPath = path.join(outDir, matchedFile);
+            }
+        }
+
+        if (fs.existsSync(generatedPath)) {
+            // 如果生成的文件路径与目标路径不同（用户可能更改了保存的文件名），则进行重命名
+            if (path.resolve(generatedPath) !== path.resolve(outputPath)) {
+                if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath);
+                fs.renameSync(generatedPath, outputPath);
+            }
             return;
         } else {
-            throw new Error('LibreOffice CLI 未生成输出文件，回退到库方法');
+            throw new Error('LibreOffice CLI 未能生成预期的输出文件。');
         }
     } catch (cliErr) {
         parentPort.postMessage({ type: 'progress', value: 40 });
-        // Fallback to libreoffice-convert
+        
+        // 如果 CLI 失败，尝试使用 libreoffice-convert 库作为后备
+        // 注意：这个库内部也依赖于找到 soffice
         try {
             const fileBuffer = fs.readFileSync(inputPath);
+            // 对于库方法，format 需要带点
+            const libFormat = '.' + format;
+            
             const convertedBuffer = await new Promise((resolve, reject) => {
-                convert.convert(fileBuffer, ext, (err, done) => {
+                convert.convert(fileBuffer, libFormat, undefined, (err, done) => {
                     if (err) return reject(err);
                     resolve(done);
                 });
             });
+            
             parentPort.postMessage({ type: 'progress', value: 90 });
             fs.writeFileSync(outputPath, convertedBuffer);
             return;
         } catch (libErr) {
-            throw new Error(`文档转换失败: CLI 错误: ${cliErr.message}; libreoffice-convert 错误: ${libErr.message}`);
+            throw new Error(`文档转换失败: 
+            CLI 方式错误: ${cliErr.message}
+            后备库方式错误: ${libErr.message}
+            请确保系统已安装 LibreOffice 并且 'soffice' 已添加到环境变量 PATH 中。`);
         }
     }
 }

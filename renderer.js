@@ -22,7 +22,7 @@ const formatMap = {
     'images': ['PNG', 'JPG', 'JPEG', 'GIF', 'BMP', 'WEBP', 'SVG', 'ICO'],
     'videos': ['MP4', 'AVI', 'MKV', 'MOV', 'FLV', 'WebM', 'WMV'],
     'audio': ['MP3', 'WAV', 'FLAC', 'AAC', 'OGG', 'M4A', 'WMA'],
-    'documents': ['PDF', 'DOCX', 'DOC', 'XLSX', 'XLS', 'PPTX', 'PPT', 'TXT']
+    'documents': ['PDF', 'DOCX', 'DOC', 'XLSX', 'XLS', 'PPTX', 'PPT', 'TXT', 'ODT', 'ODS', 'ODP', 'CSV', 'RTF']
 };
 
 // 获取分类的中文名称
@@ -32,6 +32,59 @@ const categoryNameMap = {
     'audio': '音频',
     'documents': '文档'
 };
+
+// 文档格式兼容性映射表（定义哪些格式可以互转）
+const formatCompatibilityMap = {
+    // 文字处理类
+    'doc': ['PDF', 'DOCX', 'TXT', 'ODT', 'RTF'],
+    'docx': ['PDF', 'DOC', 'TXT', 'ODT', 'RTF'],
+    'odt': ['PDF', 'DOCX', 'DOC', 'TXT', 'RTF'],
+    'rtf': ['PDF', 'DOCX', 'DOC', 'TXT', 'ODT'],
+    'txt': ['PDF', 'DOCX', 'DOC', 'ODT', 'RTF'],
+    
+    // 表格类
+    'xls': ['PDF', 'XLSX', 'CSV', 'ODS'],
+    'xlsx': ['PDF', 'XLS', 'CSV', 'ODS'],
+    'ods': ['PDF', 'XLSX', 'XLS', 'CSV'],
+    'csv': ['PDF', 'XLSX', 'XLS', 'ODS'],
+    
+    // 演示文稿类
+    'ppt': ['PDF', 'PPTX', 'ODP'],
+    'pptx': ['PDF', 'PPT', 'ODP'],
+    'odp': ['PDF', 'PPTX', 'PPT'],
+    
+    // PDF 作为源文件（通常只能转为图片或部分文档，LibreOffice 转换 PDF 到文档效果有限，但可尝试）
+    'pdf': ['DOCX', 'DOC', 'ODT', 'RTF', 'TXT']
+};
+
+// 根据源文件更新目标格式列表
+function updateTargetFormats(category, sourceFilePath) {
+    const targetSelect = document.getElementById('targetFormat');
+    if (!targetSelect) return;
+
+    const sourceExt = sourceFilePath ? sourceFilePath.split('.').pop().toLowerCase() : null;
+    let availableFormats = formatMap[category] || [];
+
+    // 只有文档类需要根据源文件进行筛选
+    if (category === 'documents' && sourceExt && formatCompatibilityMap[sourceExt]) {
+        availableFormats = formatCompatibilityMap[sourceExt];
+    }
+
+    // 过滤掉与源文件相同的格式
+    const filteredFormats = availableFormats.filter(f => f.toLowerCase() !== sourceExt);
+
+    // 更新下拉菜单
+    const currentSelection = targetSelect.value;
+    targetSelect.innerHTML = `
+        <option value="">-- 请选择目标格式 --</option>
+        ${filteredFormats.map(f => `<option value="${f}">${f}</option>`).join('')}
+    `;
+
+    // 如果之前的选择在新的列表中仍然有效，则保持选择
+    if (filteredFormats.includes(currentSelection)) {
+        targetSelect.value = currentSelection;
+    }
+}
 
 // 构建文件扩展名到分类的反向映射
 const extensionToCategoryMap = {};
@@ -111,6 +164,9 @@ function detectFileCategory(fileName) {
                             
                             // 更新预览详情
                             updateFilePreview(result.filePath);
+                            
+                            // 更新目标格式列表
+                            updateTargetFormats(detectedCategory, result.filePath);
                             
                             // 如果是图片分类，获取并设置原始尺寸
                             if (detectedCategory === 'images') {
@@ -466,6 +522,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (pendingPath && pendingName) {
             selectedFilePath = pendingPath; // 更新外层状态变量
             selectedFileName.textContent = `✓ 已选择: ${pendingName}`;
+            
+            // 更新目标格式列表
+            updateTargetFormats(category, pendingPath);
+            
             // 清除暂存的数据，避免影响后续操作
             delete document.body.dataset.pendingFilePath;
             delete document.body.dataset.pendingFileName;
@@ -484,6 +544,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     
                     // 更新预览详情
                     updateFilePreview(result.filePath);
+
+                    // 更新目标格式列表
+                    updateTargetFormats(category, result.filePath);
 
                     // 如果是图片分类，获取并设置原始尺寸
                     if (category === 'images') {
@@ -547,6 +610,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     // 3. 使用返回的文件路径进行后续操作
                     selectedFileName.textContent = `✓ 已选择: ${result.fileName}`;
                     selectedFilePath = result.filePath;
+                    
+                    // 更新目标格式列表
+                    updateTargetFormats(currentCategory, result.filePath);
+                    
                     const switched = handleFileSelection(result, currentCategory, sidebarButtons);
                     if (!switched) {
                         showToast('无法自动识别分类，请从侧边栏选择合适的分类。', 'info', 4000);
@@ -619,6 +686,10 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // 启动假进度条定时器
             if (progressTimer) clearInterval(progressTimer);
+            
+            // 隐藏开始转换按钮
+            newStartButton.style.display = 'none';
+            
             progressTimer = setInterval(() => {
                 // 30%到95%之间进行假进度模拟
                 if (currentProgress >= 30 && currentProgress < 95) {
@@ -627,7 +698,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }, 300); // 每300ms增加1%
 
-            convertFile(selectedFilePath, category, targetFormat, options);
+            convertFile(selectedFilePath, category, targetFormat, options, newStartButton);
         });
 
         // 显示/隐藏 ICO 分辨率选项及高级设置
@@ -663,7 +734,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // 文件转换功能
-    function convertFile(filePath, category, targetFormat, options = {}) {
+    function convertFile(filePath, category, targetFormat, options = {}, startButton) {
         console.log(`开始进行 ${categoryNameMap[category]} 转换: ${filePath} -> ${targetFormat}`, options);
         
         // 调用主进程的转换函数
@@ -681,6 +752,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 setTimeout(() => {
                     const progressContainer = document.getElementById('progressContainer');
                     if (progressContainer) progressContainer.style.display = 'none';
+                    // 重新显示开始转换按钮
+                    if (startButton) startButton.style.display = 'block';
                 }, 2000);
 
                 if (result.success) {
@@ -742,6 +815,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (progressTimer) clearInterval(progressTimer);
                 const progressContainer = document.getElementById('progressContainer');
                 if (progressContainer) progressContainer.style.display = 'none';
+                
+                // 转换失败也需要重新显示按钮
+                if (startButton) startButton.style.display = 'block';
 
                 showToast(`错误: ${error.message}`, 'error', 5000);
             });
