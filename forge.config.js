@@ -4,7 +4,7 @@ const { FuseV1Options, FuseVersion } = require('@electron/fuses');
 module.exports = {
   packagerConfig: {
     asar: {
-      unpack: "{node_modules/ffmpeg-static,node_modules/ffprobe-static}/**/*"
+      unpackDir: "node_modules/{ffmpeg-static,ffprobe-static}"
     },
     icon: '.\\assets\\app-icon',
     name: 'FormatTransformer'
