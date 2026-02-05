@@ -16,19 +16,33 @@ function getBinaryPath(type) {
     const exeName = type + (isWin ? '.exe' : '');
     
     // 1. 优先检查项目根目录下的 bin 文件夹
-    const localBinPath = path.join(__dirname, 'bin', exeName);
+    let localBinPath = path.join(__dirname, 'bin', exeName);
     if (fs.existsSync(localBinPath)) return localBinPath;
 
     // 2. 尝试从 node_modules 获取
     try {
+        let staticPath;
         if (type === 'ffmpeg') {
-            const staticPath = require('ffmpeg-static');
-            if (staticPath && fs.existsSync(staticPath)) return staticPath;
+            staticPath = require('ffmpeg-static');
         } else if (type === 'ffprobe') {
-            const staticPath = require('ffprobe-static').path;
-            if (staticPath && fs.existsSync(staticPath)) return staticPath;
+            staticPath = require('ffprobe-static').path;
         }
-    } catch (e) {}
+
+        if (staticPath) {
+            // 处理 FFmpeg 的情况：staticPath 是字符串（路径）
+            // 处理 FFprobe 的情况：staticPath 是字符串（路径）
+            let finalPath = staticPath;
+            
+            // 如果在打包环境中，路径可能指向 asar 内部，需要指向 unpacked 目录
+            if (app.isPackaged && finalPath.includes('app.asar')) {
+                finalPath = finalPath.replace('app.asar', 'app.asar.unpacked');
+            }
+            
+            if (fs.existsSync(finalPath)) return finalPath;
+        }
+    } catch (e) {
+        console.error(`获取 ${type} 路径失败:`, e);
+    }
 
     return null;
 }
