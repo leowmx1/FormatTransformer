@@ -527,7 +527,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             旨在提供极致简洁、高效的多媒体处理体验。
                         </div>
                         <div style="margin-top:20px;">
-                            <span class="action-link" style="justify-content:center;"><i class="bi bi-github"></i> 检查更新</span>
+                            <a class="action-link" href="https://github.com/leowmx1/FormatTransformer" style="justify-content:center;"><i class="bi bi-github"></i> 检查更新</a>
                         </div>
                     </div>
                 </div>
